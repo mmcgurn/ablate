@@ -107,7 +107,7 @@ class YamlParser : public Factory {
     /* get all children as factory */
     std::vector<std::shared_ptr<Factory>> GetFactorySequence(const std::string& name) const override;
 
-    bool Contains(const std::string& name) const override { return yamlConfiguration[name] != nullptr; };
+    bool Contains(const std::string& name) const override { return yamlConfiguration[name].IsNull(); };
 
     std::unordered_set<std::string> GetKeys() const override;
 
