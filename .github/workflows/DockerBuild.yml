@@ -1,4 +1,4 @@
-name: Build the latest ABLATE as a docker image
+name: Build the latest ABLATE as a docker image when a new version tag is issued
 
 on:
   push:

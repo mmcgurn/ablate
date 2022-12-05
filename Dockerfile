@@ -22,7 +22,7 @@ WORKDIR /ablate
 
 # Configure & build
 run cmake -DCMAKE_BUILD_TYPE=Release -S /source/ -B .
-run make -j
+run make -j $(nproc)
 
 # Build the custom documentation components
 run python3 /source/docs/ablateDevGenerator.py  --rootDir=/source/ --ablateExe=/ablate/ablate
