@@ -33,7 +33,7 @@ jobs:
           fetch-depth: 0
 
       - name: Get the version from tag
-        run: echo VERSION=${GITHUB_REF#refs/*/}" >> $GITHUB_ENV
+        run: echo "VERSION=${GITHUB_REF#refs/*/}" >> $GITHUB_ENV
 
       - name: Building ABLATE
         run: |
@@ -76,7 +76,7 @@ jobs:
         run: echo "${{ secrets.CR_PAT }}" | docker login ghcr.io -u ${{ secrets.DOCKER_USER }} --password-stdin
 
       - name: Get the version from tag
-        run: echo VERSION=${GITHUB_REF#refs/*/}" >> $GITHUB_ENV
+        run: echo "VERSION=${GITHUB_REF#refs/*/}" >> $GITHUB_ENV
 
       - name: Run Test image
         run: |

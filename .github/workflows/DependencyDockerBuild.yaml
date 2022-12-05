@@ -1,4 +1,4 @@
-name: Docker-Publish
+name: Docker-Dependency-Publish
 
 on:
   push:
@@ -56,7 +56,7 @@ jobs:
             --push \
             --tag $IMAGE_ID:latest \
             --file DockerDependencyFile 
-  
+
   # Push the latest tag if everything build
   push-latest:
     needs: [build]
