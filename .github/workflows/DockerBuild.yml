@@ -28,6 +28,9 @@ jobs:
           submodules: recursive
           fetch-depth: 0
 
+      - name: Log into registry
+        run: echo "${{ secrets.CR_PAT }}" | docker login ghcr.io -u ${{ secrets.DOCKER_USER }} --password-stdin
+
       - name: Building ABLATE
         run: |
           # define the image id
