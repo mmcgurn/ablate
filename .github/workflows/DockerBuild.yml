@@ -2,10 +2,6 @@ name: Build the latest ABLATE as a docker image
 
 on:
   push:
-    # Publish `main` as Docker `latest` image.
-    branches:
-      - mcgurn/ablate-docker
-
     # Publish `v1.2.3` tags as releases.
     tags:
       - v*
