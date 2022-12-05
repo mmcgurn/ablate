@@ -18,14 +18,17 @@ ENV TF_ENABLE_ONEDNN_OPTS=0
 
 # Copy over the source
 COPY . /source
-WORKDIR /build
+WORKDIR /ablate
 
 # Configure & build
 run cmake -DCMAKE_BUILD_TYPE=Release -S /source/ -B .
-run make -j $(nproc)
+run make -j
 
 # Build the custom documentation components
-run python3 /source/docs/ablateDevGenerator.py  --rootDir=/source/ --ablateExe=/build/ablate
+run python3 /source/docs/ablateDevGenerator.py  --rootDir=/source/ --ablateExe=/ablate/ablate
+
+# Export the ABLATE_PATH
+ENV ABLATE_PATH=/ablate
 
 # Specify Entry Point for tests
 ENV CTEST_OUTPUT_ON_FAILURE=ON

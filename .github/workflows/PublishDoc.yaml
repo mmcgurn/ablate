@@ -35,7 +35,7 @@ jobs:
       - name: Build the docker image
         run: |
           docker buildx build .\
-            --file DockerTestFile \
+            --file Dockerfile \
             --tag framework-doc-image \
             --load 
 

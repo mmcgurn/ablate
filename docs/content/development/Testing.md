@@ -18,10 +18,10 @@ Automated testing is performed on a series of linux Docker images automatically 
 
 ```bash
 # Build the default docker testing image
-docker build -t testing_image -f DockerTestFile .
+docker build -t testing_image -f Dockerfile .
 
 # or select a specific base version from https://github.com/orgs/UBCHREST/packages?tab=packages&q=ablate-dependencies
-docker build -t testing_image --build-arg ABLATE_DEPENDENCY_IMAGE=ghcr.io/ubchrest/ablate/ablate-dependencies-clang-index64:latest -f DockerTestFile .
+docker build -t testing_image --build-arg ABLATE_DEPENDENCY_IMAGE=ghcr.io/ubchrest/ablate/ablate-dependencies-clang-index64:latest -f Dockerfile .
 
 # Run the built tests and view results
 docker run --rm testing_image 
