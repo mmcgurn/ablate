@@ -499,7 +499,7 @@ void ablate::radiation::Radiation::ParticleStep(ablate::domain::SubDomain& subDo
                 DMSwarmRestoreField(radReturn, DMSwarmField_rank, nullptr, nullptr, (void**)&returnRank) >> checkError;
             }
             // Exact the ray to reduce lookup
-            auto& ray = raySegments[identifiers->nSegment];
+            //            auto& ray = raySegments[identifiers->nSegment];
 
             /** ********************************************
              * The face stepping routine will give the precise path length of the mesh without any error. It will also allow the faces of the cells to be accounted for so that the
@@ -543,10 +543,15 @@ void ablate::radiation::Radiation::ParticleStep(ablate::domain::SubDomain& subDo
                 }
             }
             virtualcoords[ipart].hhere = (virtualcoords[ipart].hhere == 0) ? minCellRadius : virtualcoords[ipart].hhere;
-            auto& raySegment = ray.emplace_back();
-            raySegment.cell =
-                index[ipart];  //! Register the current cell index in the rays vector. The physical coordinates that have been set in the previous step / loop will be immediately registered.
-            raySegment.h = virtualcoords[ipart].hhere;
+            Segment segment;
+            segment.cell = index[ipart];
+            segment.h = virtualcoords[ipart].hhere;
+            raySegments[identifiers->nSegment].push_back(segment);
+            //            PetscInt nCells = raySegments[identifiers->nSegment].size();
+            //            raySegments[identifiers->nSegment][nCells - 1].cell =
+            //                index[ipart];  //! Register the current cell index in the rays vector. The physical coordinates that have been set in the previous step / loop will be immediately
+            //                registered.
+            //            raySegments[identifiers->nSegment][nCells - 1].h = virtualcoords[ipart].hhere;
         } else {
             virtualcoords[ipart].hhere = (virtualcoords[ipart].hhere == 0) ? minCellRadius : virtualcoords[ipart].hhere;
         }

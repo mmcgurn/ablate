@@ -132,9 +132,9 @@ class Radiation : protected utilities::Loggable<Radiation> {  //!< Cell solver p
     /** Segments belong to the local maps and hold all of the local information about the ray segments both during the search and the solve */
     struct Segment {
         //!< Stores the cell indices of the segment locally.
-        PetscInt cell;
+        PetscInt cell = -1;
         //!< Stores the space steps of the segment locally.
-        PetscReal h;
+        PetscReal h = 0;
     };
 
     /** Virtual coordinates are used during the search to compute path length properties in case the simulation is not 3 dimensional */
