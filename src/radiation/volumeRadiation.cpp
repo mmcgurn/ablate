@@ -12,27 +12,15 @@ ablate::radiation::VolumeRadiation::~VolumeRadiation() {}
 void ablate::radiation::VolumeRadiation::Setup() {
     solver::Range cellRange;
     GetCellRange(cellRange);  //!< Gets the cell range that should be applied to the radiation solver
-
-    // check for ghost cells
-    DMLabel ghostLabel;
-    DMGetLabel(subDomain->GetDM(), "ghost", &ghostLabel) >> checkError;
-
-    for (PetscInt c = cellRange.start; c < cellRange.end; ++c) {            //!< This will iterate only though local cells
-        const PetscInt iCell = cellRange.points ? cellRange.points[c] : c;  //!< Isolates the valid cells
-        PetscInt ghost = -1;
-        if (ghostLabel) DMLabelGetValue(ghostLabel, iCell, &ghost) >> checkError;
-        if (!(ghost >= 0)) radiationCellRange.Add(iCell);
-    }
-
     ablate::solver::CellSolver::Setup();
-    radiation->Setup(radiationCellRange.GetRange(), GetSubDomain());  //!< Insert the cell range of the solver here
+    radiation->Setup(cellRange, GetSubDomain());  //!< Insert the cell range of the solver here
     RestoreRange(cellRange);
 }
 
 void ablate::radiation::VolumeRadiation::Register(std::shared_ptr<ablate::domain::SubDomain> subDomain) { ablate::solver::Solver::Register(subDomain); }
 
 void ablate::radiation::VolumeRadiation::Initialize() {
-    radiation->Initialize(radiationCellRange.GetRange(), GetSubDomain());  //!< Get the range of cells that the solver occupies in order for the radiation solver to give energy to the finite volume
+    radiation->Initialize(GetSubDomain());  //!< Get the range of cells that the solver occupies in order for the radiation solver to give energy to the finite volume
 }
 
 PetscErrorCode ablate::radiation::VolumeRadiation::PreRHSFunction(TS ts, PetscReal time, bool initialStage, Vec locX) {
@@ -58,8 +46,8 @@ PetscErrorCode ablate::radiation::VolumeRadiation::ComputeRHSFunction(PetscReal 
 
     radiation->Solve(subDomain->GetSolutionVector(), subDomain->GetField("temperature"), subDomain->GetAuxVector());
 
-    for (PetscInt c = radiationCellRange.GetRange().start; c < radiationCellRange.GetRange().end; ++c) {            //!< This will iterate only though local cells
-        const PetscInt iCell = radiationCellRange.GetRange().points ? radiationCellRange.GetRange().points[c] : c;  //!< Isolates the valid cells
+    for (PetscInt c = radiation->radiationCellRange.GetRange().start; c < radiation->radiationCellRange.GetRange().end; ++c) {            //!< This will iterate only though local cells
+        const PetscInt iCell = radiation->radiationCellRange.GetRange().points ? radiation->radiationCellRange.GetRange().points[c] : c;  //!< Isolates the valid cells
         PetscScalar* rhsValues;
         DMPlexPointLocalFieldRead(subDomain->GetDM(), iCell, eulerFieldInfo.id, rhsArray, &rhsValues);
         rhsValues[ablate::finiteVolume::CompressibleFlowFields::RHOE] += radiation->GetIntensity(iCell);  //!< Loop through the cells and update the equation of state

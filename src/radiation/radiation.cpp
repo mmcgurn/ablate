@@ -9,8 +9,7 @@
 
 ablate::radiation::Radiation::Radiation(const std::string& solverId, const std::shared_ptr<domain::Region>& region, const PetscInt raynumber,
                                         std::shared_ptr<eos::radiationProperties::RadiationModel> radiationModelIn, std::shared_ptr<ablate::monitors::logs::Log> log)
-    : nTheta(raynumber), nPhi(2*raynumber), solverId(solverId), region(region), radiationModel(std::move(radiationModelIn)), log(std::move(log)) {
-}
+    : nTheta(raynumber), nPhi(2 * raynumber), solverId(solverId), region(region), radiationModel(std::move(radiationModelIn)), log(std::move(log)) {}
 
 ablate::radiation::Radiation::~Radiation() {
     if (faceGeomVec) VecDestroy(&faceGeomVec) >> checkError;
@@ -31,6 +30,17 @@ void ablate::radiation::Radiation::Setup(const solver::Range& cellRange, ablate:
 
     if (log) {
         log->Initialize(subDomain.GetComm());
+    }
+
+    // check for ghost cells
+    DMLabel ghostLabel;
+    DMGetLabel(subDomain.GetDM(), "ghost", &ghostLabel) >> checkError;
+
+    for (PetscInt c = cellRange.start; c < cellRange.end; ++c) {            //!< This will iterate only though local cells
+        const PetscInt iCell = cellRange.points ? cellRange.points[c] : c;  //!< Isolates the valid cells
+        PetscInt ghost = -1;
+        if (ghostLabel) DMLabelGetValue(ghostLabel, iCell, &ghost) >> checkError;
+        if (!(ghost >= 0)) radiationCellRange.Add(iCell);
     }
 
     /** Initialization to call, draws each ray vector and gets all of the cells associated with it
@@ -138,7 +148,7 @@ void ablate::radiation::Radiation::Setup(const solver::Range& cellRange, ablate:
     EndEvent();
 }
 
-void ablate::radiation::Radiation::Initialize(const solver::Range& cellRange, ablate::domain::SubDomain& subDomain) {
+void ablate::radiation::Radiation::Initialize(ablate::domain::SubDomain& subDomain) {
     StartEvent("Radiation::Initialize");
     DM faceDM;
     const PetscScalar* faceGeomArray;
@@ -359,9 +369,17 @@ void ablate::radiation::Radiation::Solve(Vec solVec, ablate::domain::Field tempe
     VecGetDM(cellGeomVec, &cellDM) >> checkError;
     VecGetArrayRead(cellGeomVec, &cellGeomArray) >> checkError;
 
+    //    solver::Range cellRange;
+    //    GetCellRange(cellRange);  //!< Gets the cell range that should be applied to the radiation solver
+    //
+    //    // check for ghost cells
+    //    DMLabel ghostLabel;
+    //    DMGetLabel(subDomain->GetDM(), "ghost", &ghostLabel) >> checkError;
+
     if (log) log->Printf("x           y           z           G           L           T\n");  //!< Line labelling the log outputs for readability
 
-    for (auto& [iCell, o] : origin) {  //!< Iterate through the cells that are stored in the origin
+    for (PetscInt c = radiationCellRange.GetRange().start; c < radiationCellRange.GetRange().end; ++c) {            //!< Iterate through the cells that are stored in the origin
+        const PetscInt iCell = radiationCellRange.GetRange().points ? radiationCellRange.GetRange().points[c] : c;  //!< Isolates the valid cells
         /** Gets the temperature from the cell index specified */
         /** In the case of a surface implementation, the temperature for the losses will be the temperature of the boundary cell that the face is attached to.
          * In the case of a volume implementation, the temperature of the losses will be the temperature of the volumetric origin cell.
@@ -587,49 +605,35 @@ void ablate::radiation::Radiation::EvaluateGains(Vec solVec, ablate::domain::Fie
 
     /** Get all of the ray information from the particle
      * Get the ntheta and nphi from the particle that is currently being looked at. This will be used to identify its ray and calculate its direction. */
-    PetscInt npoints;
-    DMSwarmGetLocalSize(radsolve, &npoints);  //!< Recalculate the number of particles that are in the domain
-    DMSwarmGetField(radsolve, IdentifierField, nullptr, nullptr, (void**)&identifier) >> checkError;
-    DMSwarmGetField(radsolve, "carrier", nullptr, nullptr, (void**)&carrier) >> checkError;
-    DMSwarmGetField(radsolve, "access", nullptr, nullptr, (void**)&access) >> checkError;
+    //    DMSwarmGetLocalSize(radsolve, &npoints);  //!< Recalculate the number of particles that are in the domain
+    //    DMSwarmGetField(radsolve, IdentifierField, nullptr, nullptr, (void**)&identifier) >> checkError;
+    //    DMSwarmGetField(radsolve, "carrier", nullptr, nullptr, (void**)&carrier) >> checkError;
+    //    DMSwarmGetField(radsolve, "access", nullptr, nullptr, (void**)&access) >> checkError;
 
     /** ********************************************************************************************************************************
-     * Iterate over the particles that are present in the domain
-     * The cells that are in the domain at this point should represent the solve cells attached to the ray segments. They will be transported after local calculation and the non-native ones will
-     * be destroyed.
-     * First the particles should be zeroed in case they are carrying information from the last time step.
+     * First the ray information should be zeroed in case they are carrying information from the last time step.
      * Then the entire solve sequence can be run through. This will require that the particles are iterated through twice.
-     *
-     * We can iterate through the map here instead of the particles. That will probably be faster.
-     * Only certain particles will have identifiers associated with the ray segments, so iterating through the particles will not work.
+     *  Start by marching over all rays in this rank
      */
-    for (PetscInt ipart = 0; ipart < npoints; ipart++) {  //!< Iterate through the particles in the space to zero their information.
-        carrier[ipart].Ij = 0;                            //!< Zero the intensity of the segment
-        carrier[ipart].Krad = 1;                          //!< Zero the total absorption for this domain
-        carrier[ipart].I0 = 0;                            //!< Zero the initial intensity of the ray segment
-    }
-    /** Now that the particle information has been zeroed, the solve can begin.
-     * The ray segment map will need to be iterated though instead of the carrier particles. This is because the carrier particles will have redundant segments or no matching segments.
-     * We don't want to resolve any segments unnecessarily, so the map can be iterated through instead.
-     * Don't touch the carrier particles.
-     */
-
-    // Start by marching over all rays in this rank
-    for(std::size_t r = 0; r < raySegments.size(); r++){
+    for (std::size_t r = 0; r < raySegments.size(); r++) {
         // zero our the calculation
         raySegmentsCalculation[r].Ij = 0.0;
         raySegmentsCalculation[r].Krad = 1.0;
     }
 
-
-    for (PetscInt ipart = 0; ipart < npoints; ipart++) {  //!< Iterate over the particles present in the domain. How to isolate the particles in this domain and iterate over them? If there are no
-                                                          //!< particles then pass out of initialization.
+    /** Now that the particle information has been zeroed, the solve can begin.
+     * The ray segment map will need to be iterated though instead of the carrier particles. This is because the carrier particles will have redundant segments or no matching segments.
+     * We don't want to resolve any segments unnecessarily, so the map can be iterated through instead.
+     * Don't touch the carrier particles.
+     */
+    for (std::size_t r = 0; r < raySegments.size(); r++) {  //!< Iterate over the particles present in the domain. How to isolate the particles in this domain and iterate over them? If there are no
+                                                            //!< particles then pass out of initialization.
         /** Each ray is born here. They begin at the far field temperature.
             Initial ray intensity should be set based on which boundary it is coming from.
             Set the initial ray intensity to the wall temperature, etc.
          */
         /** For each domain in the ray (The rays vector will have an added index, splitting every x points) */
-        PetscInt numPoints = static_cast<PetscInt>(raySegments[access[ipart]].cells.size());
+        PetscInt numPoints = static_cast<PetscInt>(raySegments[r].size());
 
         if (numPoints > 0) {
             for (PetscInt n = 0; n < numPoints; n++) {
@@ -639,75 +643,81 @@ void ablate::radiation::Radiation::EvaluateGains(Vec solVec, ablate::domain::Fie
                     Get the array that lives inside the vector
                     Gets the temperature from the cell index specified
                 */
-                DMPlexPointLocalRead(solDm, raySegments[access[ipart]].cells[n], solArray, &sol);
+                DMPlexPointLocalRead(solDm, raySegments[r][n].cell, solArray, &sol);
                 if (sol) {
-                    DMPlexPointLocalFieldRead(auxDm, raySegments[access[ipart]].cells[n], temperatureField.id, auxArray, &temperature);
+                    DMPlexPointLocalFieldRead(auxDm, raySegments[r][n].cell, temperatureField.id, auxArray, &temperature);
                     if (temperature) { /** Input absorptivity (kappa) values from model here. */
                         absorptivityFunction.function(sol, *temperature, &kappa, absorptivityFunctionContext);
-                        carrier[ipart].Ij += FlameIntensity(1 - exp(-kappa * raySegments[access[ipart]].h[n]), *temperature) * carrier[ipart].Krad;
-                        carrier[ipart].Krad *= exp(-kappa * raySegments[access[ipart]].h[n]);  //!< Compute the total absorption for this domain
-
-                        if (n ==
-                            (numPoints - 1)) { /** If this is the beginning of the ray, set this as the initial intensity. (The segment intensities will be filtered through during the origin run) */
-                            carrier[ipart].I0 = FlameIntensity(1, *temperature);  //!< Set the initial intensity of the ray segment
-                        }
+                        raySegmentsCalculation[r].Ij += FlameIntensity(1 - exp(-kappa * raySegments[r][n].h), *temperature) * raySegmentsCalculation[r].Krad;
+                        raySegmentsCalculation[r].Krad *= exp(-kappa * raySegments[r][n].h);  //!< Compute the total absorption for this domain
                     }
                 }
+            }
+            if (raySegmentsCalculation[r]
+                    .last) { /** If this is the beginning of the ray, set this as the initial intensity. (The segment intensities will be filtered through during the origin run) */
+                DMPlexPointLocalFieldRead(auxDm, raySegments[r][numPoints - 1].cell, temperatureField.id, auxArray, &temperature);
+                DMPlexPointLocalFieldRead(auxDm, raySegments[r][numPoints - 1].cell, temperatureField.id, auxArray, &temperature);
+                raySegmentsCalculation[r].Ij += FlameIntensity(1, *temperature) * raySegmentsCalculation[r].Krad;  //!< Set the initial intensity of the ray segment
             }
         }
     }
 
-    /** Restore the fields associated with the particles after all of the particles have been stepped */
-    DMSwarmRestoreField(radsolve, IdentifierField, nullptr, nullptr, (void**)&identifier) >> checkError;
-    DMSwarmRestoreField(radsolve, "carrier", nullptr, nullptr, (void**)&carrier) >> checkError;
-    DMSwarmRestoreField(radsolve, "access", nullptr, nullptr, (void**)&access) >> checkError;
+    //    /** Restore the fields associated with the particles after all the particles have been stepped */
+    //    DMSwarmRestoreField(radsolve, IdentifierField, nullptr, nullptr, (void**)&identifier) >> checkError;
+    //    DMSwarmRestoreField(radsolve, "carrier", nullptr, nullptr, (void**)&carrier) >> checkError;
+    //    DMSwarmRestoreField(radsolve, "access", nullptr, nullptr, (void**)&access) >> checkError;
 
     /** ********************************************************************************************************************************
      * Now the carrier has all of the information from the rays that are needed to compute the final ray intensity. Therefore, we will perform the migration.
      * Then, all of the carrier particles will be looped through and the local Origins associated with each cell will be updated
      * */
-    PetscInt* rankid;
-    DMSwarmGetField(radsolve, "DMSwarm_rank", nullptr, nullptr, (void**)&rankid) >> checkError;
-    DMSwarmGetField(radsolve, IdentifierField, nullptr, nullptr, (void**)&identifier) >> checkError;
-    for (PetscInt ipart = 0; ipart < npoints; ipart++) {
-        rankid[ipart] = identifier[ipart].rank;
-    }
-    DMSwarmRestoreField(radsolve, "DMSwarm_rank", nullptr, nullptr, (void**)&rankid) >> checkError;
-    DMSwarmRestoreField(radsolve, IdentifierField, nullptr, nullptr, (void**)&identifier) >> checkError;
-
-    DMSwarmMigrate(radsolve, PETSC_FALSE);  //!< After iterating through all of the particles, perform a migration to the origin ranks. This will move the particles.
+    // TODO: The communication step with PETSc SF will be performed here
+    //
+    //    PetscInt* rankid;
+    //    DMSwarmGetField(radsolve, "DMSwarm_rank", nullptr, nullptr, (void**)&rankid) >> checkError;
+    //    DMSwarmGetField(radsolve, IdentifierField, nullptr, nullptr, (void**)&identifier) >> checkError;
+    //    for (PetscInt ipart = 0; ipart < npoints; ipart++) {
+    //        rankid[ipart] = identifier[ipart].rank;
+    //    }
+    //    DMSwarmRestoreField(radsolve, "DMSwarm_rank", nullptr, nullptr, (void**)&rankid) >> checkError;
+    //    DMSwarmRestoreField(radsolve, IdentifierField, nullptr, nullptr, (void**)&identifier) >> checkError;
+    //
+    //    DMSwarmMigrate(radsolve, PETSC_FALSE);  //!< After iterating through all of the particles, perform a migration to the origin ranks. This will move the particles.
 
     /** ********************************************************************************************************************************
      * Now iterate through all of the particles in order to perform the information transfer */
-    DMSwarmGetLocalSize(radsolve, &npoints);                                                          //!< Recalculate the number of particles that are in the domain
-    DMSwarmGetField(radsolve, IdentifierField, nullptr, nullptr, (void**)&identifier) >> checkError;  //!< Field information is needed in order to read data from the incoming particles.
-    DMSwarmGetField(radsolve, "carrier", nullptr, nullptr, (void**)&carrier) >> checkError;
+    //    DMSwarmGetLocalSize(radsolve, &npoints);                                                          //!< Recalculate the number of particles that are in the domain
+    //    DMSwarmGetField(radsolve, IdentifierField, nullptr, nullptr, (void**)&identifier) >> checkError;  //!< Field information is needed in order to read data from the incoming particles.
+    //    DMSwarmGetField(radsolve, "carrier", nullptr, nullptr, (void**)&carrier) >> checkError;
 
-    /** Iterate through the particles and offload the information to their associated origin cell struct. */
-    for (PetscInt ipart = 0; ipart < npoints; ipart++) {
-        if (identifier[ipart].rank == rank) {
-            origin[identifier[ipart].iCell].handler[identifier[ipart]] = carrier[ipart];
-
-            /** Delete all of the particles that were transported to their origin domains -> Delete if the particle has travelled to get here and isn't native
-             * Delete the particles as the local memory is being written to reduce the total memory consumption */
-            if (identifier[ipart].nsegment != 1) {
-                DMSwarmRestoreField(radsolve, IdentifierField, nullptr, nullptr, (void**)&identifier) >> checkError;  //!< Need to restore the field access before deleting a point
-                DMSwarmRestoreField(radsolve, "carrier", nullptr, nullptr, (void**)&carrier) >> checkError;
-
-                DMSwarmRemovePointAtIndex(radsolve, ipart);  //!< Delete the particle!
-
-                DMSwarmGetLocalSize(radsolve, &npoints);                                                          //!< Need to recalculate the number of particles that are in the domain again
-                DMSwarmGetField(radsolve, IdentifierField, nullptr, nullptr, (void**)&identifier) >> checkError;  //!< Get the field back
-                DMSwarmGetField(radsolve, "carrier", nullptr, nullptr, (void**)&carrier) >> checkError;
-                ipart--;  //!< Check the point replacing the one that was deleted
-            }
-        }
-    }
+    //    /** Iterate through the particles and offload the information to their associated origin cell struct. */
+    //    for (PetscInt ipart = 0; ipart < npoints; ipart++) {
+    //        if (identifier[ipart].rank == rank) {
+    //            origin[identifier[ipart].iCell].handler[identifier[ipart]] = carrier[ipart];
+    //
+    //            /** Delete all of the particles that were transported to their origin domains -> Delete if the particle has travelled to get here and isn't native
+    //             * Delete the particles as the local memory is being written to reduce the total memory consumption */
+    //            if (identifier[ipart].nsegment != 1) {
+    //                DMSwarmRestoreField(radsolve, IdentifierField, nullptr, nullptr, (void**)&identifier) >> checkError;  //!< Need to restore the field access before deleting a point
+    //                DMSwarmRestoreField(radsolve, "carrier", nullptr, nullptr, (void**)&carrier) >> checkError;
+    //
+    //                DMSwarmRemovePointAtIndex(radsolve, ipart);  //!< Delete the particle!
+    //
+    //                DMSwarmGetLocalSize(radsolve, &npoints);                                                          //!< Need to recalculate the number of particles that are in the domain again
+    //                DMSwarmGetField(radsolve, IdentifierField, nullptr, nullptr, (void**)&identifier) >> checkError;  //!< Get the field back
+    //                DMSwarmGetField(radsolve, "carrier", nullptr, nullptr, (void**)&carrier) >> checkError;
+    //                ipart--;  //!< Check the point replacing the one that was deleted
+    //            }
+    //        }
+    //    }
 
     /** ********************************************************************************************************************************
      * Now iterate through all of the ray identifiers in order to compute the final ray intensities */
 
-    for (auto& [iCell, o] : origin) {  //!< Iterate through the cells that are stored in the origin
+    PetscInt originRayId = 0;
+
+    for (PetscInt c = radiationCellRange.GetRange().start; c < radiationCellRange.GetRange().end; ++c) {            //!< Iterate through the cells that are stored in the origin
+        const PetscInt iCell = radiationCellRange.GetRange().points ? radiationCellRange.GetRange().points[c] : c;  //!< Isolates the valid cells
 
         origin[iCell].intensity = 0;  //!< Make sure to zero the intensity of every cell before beginning to calculate the intensity for this time step.
 
@@ -718,26 +728,28 @@ void ablate::radiation::Radiation::EvaluateGains(Vec solVec, ablate::domain::Fie
             for (PetscInt nphi = 0; nphi < nPhi; nphi++) {
                 /** Now that we are iterating over every ray identifier in this local domain, we can get all of the particles that are associated with this ray.
                  * We will need to sort the rays in order of domain segment. We need to start at the end of the ray and go towards the beginning of the ray. */
-                Identifier loopid = {.rank = rank,
-                                     .iCell = PetscShort(iCell),
-                                     .ntheta = PetscShort(ntheta),
-                                     .nphi = PetscShort(nphi),
-                                     .nsegment = 1};  //!< Instantiate an identifier associated with this loop location.
+                //                Identifier loopid = {.rank = rank,
+                //                                     .iCell = PetscShort(iCell),
+                //                                     .ntheta = PetscShort(ntheta),
+                //                                     .nphi = PetscShort(nphi),
+                //                                     .nsegment = 1};  //!< Instantiate an identifier associated with this loop location.
 
                 /** Get the maximum nsegment by looping through all of the particles and searching for it.*/
-                bool pointfound = true;
-                PetscInt oldsegment = loopid.nsegment;
-                while (pointfound) {
-                    /** Starting at the first possible segment for this ID
-                     * //                             If it exists, increase the segment number that is being checked for.
-                     * Also, set the maximum segment that is available for this ray to the segment that is currently being checked.
-                     * */
-                    if (origin[iCell].handler.count(loopid) > 0) {
-                        loopid.nsegment++;
-                    }
-                    pointfound = oldsegment != loopid.nsegment;  //!< If no point was found during the whole for loop, then we must have stumbled on the last segment in this ray.
-                    oldsegment = loopid.nsegment;                //!< Set the old segment
-                }
+                // TODO: The routine for finding the maximum segment number is no longer necessary if the number of segments per ray is stored at the ray root
+                //
+                //                bool pointfound = true;
+                //                PetscInt oldsegment = loopid.nsegment;
+                //                while (pointfound) {
+                //                    /** Starting at the first possible segment for this ID
+                //                     * //                             If it exists, increase the segment number that is being checked for.
+                //                     * Also, set the maximum segment that is available for this ray to the segment that is currently being checked.
+                //                     * */
+                //                    if (origin[iCell].handler.count(loopid) > 0) {
+                //                        loopid.nsegment++;
+                //                    }
+                //                    pointfound = oldsegment != loopid.nsegment;  //!< If no point was found during the whole for loop, then we must have stumbled on the last segment in this ray.
+                //                    oldsegment = loopid.nsegment;                //!< Set the old segment
+                //                }
 
                 /** Now that we have found the maximum segment in the domain, we can iterate from the last segment to the beginning segment of this ray identifier */
                 /** Iterate over the particles that are present in the domain
@@ -745,16 +757,16 @@ void ablate::radiation::Radiation::EvaluateGains(Vec solVec, ablate::domain::Fie
                  * The I0 (beginning ray intensity) will also need to be found before the ray is added.
                  * The source and absorption must be set to zero at the beginning of each new ray.
                  * */
-                PetscReal Kradd = 1;           //!< This must be reset at the beginning of each new ray.
-                PetscReal Isource = 0;         //!< This must be reset at the beginning of each new ray.
-                PetscReal I0 = 0;              //!< For the last segment in the domain, take that as the black body intensity of the far field.
-                loopid.nsegment--;             //!< Decrement the segment identifier to the last known segment that was found.
-                oldsegment = loopid.nsegment;  //!< Set the old segment to be the head of the ray
+                PetscReal Kradd = 1;    //!< This must be reset at the beginning of each new ray.
+                PetscReal Isource = 0;  //!< This must be reset at the beginning of each new ray.
+                                        //                PetscReal I0 = 0;              //!< For the last segment in the domain, take that as the black body intensity of the far field.
+                PetscInt nsegment = 0;
+                //                loopid.nsegment--;             //!< Decrement the segment identifier to the last known segment that was found.
+                //                maxSegment = loopid.nsegment;  //!< Set the old segment to be the head of the ray
 
-                loopid.nsegment = 0;
-                while (loopid.nsegment <= oldsegment) {  //!< Need to go through all of the ray segments until the origin of the ray is reached
+                while (nsegment <= raySegmentsPerOriginRay[originRayId]) {  //!< Need to go through all of the ray segments until the origin of the ray is reached
 
-                    I0 = (oldsegment == loopid.nsegment) ? origin[iCell].handler[loopid].I0 : I0;  //!< Set I0 if it is the last segment in the ray
+                    //                    I0 = (oldsegment == loopid.nsegment) ? origin[iCell].handler[loopid].I0 : I0;  //!< Set I0 if it is the last segment in the ray
 
                     /** Global ray computation happens here, grabbing values from the transported particles.
                      * The rays end here, their intensity is added to the total intensity of the cell.
@@ -762,9 +774,9 @@ void ablate::radiation::Radiation::EvaluateGains(Vec solVec, ablate::domain::Fie
                      * The sin(theta) is a result of the polar coordinate discretization.
                      * In the parallel form at the end of each ray, the absorption of the initial ray and the absorption of the black body source are computed individually at the end.
                      * */
-                    Isource += origin[iCell].handler[loopid].Ij * Kradd;  //!< Add the black body radiation transmitted through the domain to the source term
-                    Kradd *= origin[iCell].handler[loopid].Krad;          //!< Add the absorption for this domain to the total absorption of the ray
-                    loopid.nsegment++;                                    //!< Decrement the segment number to move to the next closer segment in the ray.
+                    Isource += raySegmentSummary[originRayId].Ij * Kradd;  //!< Add the black body radiation transmitted through the domain to the source term
+                    Kradd *= raySegmentSummary[originRayId].Krad;          //!< Add the absorption for this domain to the total absorption of the ray
+                    nsegment++;                                            //!< Decrement the segment number to move to the next closer segment in the ray.
                 }
 
                 if (dim != 1) {
@@ -774,15 +786,17 @@ void ablate::radiation::Radiation::EvaluateGains(Vec solVec, ablate::domain::Fie
                 }
                 PetscReal ldotn = SurfaceComponent(faceDM, faceGeomArray, iCell, nphi, ntheta);  //!< If surface, get the perpendicular component here and multiply the result by it
 
-                origin[iCell].intensity += ((I0 * Kradd) + Isource) * abs(sin(theta)) * dTheta * dPhi * ldotn;  //!< Final ray calculation
+                origin[iCell].intensity += (Isource)*abs(sin(theta)) * dTheta * dPhi * ldotn;  //!< Final ray calculation
+
+                originRayId++;
             }
         }
         origin[iCell].handler.clear();  //!< Eliminate all of the data being stored in the cell handler to free local memory
     }
 
     /** Restore the fields associated with the particles after all of the particles have been stepped. */
-    DMSwarmRestoreField(radsolve, IdentifierField, nullptr, nullptr, (void**)&identifier) >> checkError;
-    DMSwarmRestoreField(radsolve, "carrier", nullptr, nullptr, (void**)&carrier) >> checkError;
+    //    DMSwarmRestoreField(radsolve, IdentifierField, nullptr, nullptr, (void**)&identifier) >> checkError;
+    //    DMSwarmRestoreField(radsolve, "carrier", nullptr, nullptr, (void**)&carrier) >> checkError;
 
     /** Cleanup */
     VecRestoreArrayRead(solVec, &solArray);

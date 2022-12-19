@@ -8,6 +8,7 @@
 #include "io/interval/interval.hpp"
 #include "monitors/logs/log.hpp"
 #include "solver/cellSolver.hpp"
+#include "solver/dynamicRange.hpp"
 #include "solver/timeStepper.hpp"
 #include "utilities/constants.hpp"
 #include "utilities/loggable.hpp"
@@ -54,10 +55,8 @@ class Radiation : protected utilities::Loggable<Radiation> {  //!< Cell solver p
     struct Carrier {
         PetscReal Ij = 0;    //!< Black body source for the segment. Make sure that this is reset every solve after the value has been transported.
         PetscReal Krad = 1;  //!< Absorption for the segment. Make sure that this is reset every solve after the value has been transported.
+        bool last = false;   //!< A tag that determines whether this ray segment is the last in its calculation. This will determine whether the initial intensity is attached to it.
     };
-
-
-
 
     /** Returns the black body intensity for a given temperature and emissivity */
     static PetscReal FlameIntensity(PetscReal epsilon, PetscReal temperature);
@@ -68,21 +67,21 @@ class Radiation : protected utilities::Loggable<Radiation> {  //!< Cell solver p
     /**
      * @param cellRange The range of cells for which rays are initialized
      */
-    virtual void Initialize(const solver::Range& cellRange, ablate::domain::SubDomain& subDomain);
+    virtual void Initialize(ablate::domain::SubDomain& subDomain);
 
-//    /** Function to give other classes access to the intensity
-//     * Put safegaurds on the intensity read so that the rhs doesn't break if the time stepper decides to put absurd values into the eos for fun
-//     * */
-//    inline PetscReal GetIntensity(PetscInt iCell) {
-//        if (abs(origin[iCell].net) < 1E10)
-//            return origin[iCell].net;
-//        else if (origin[iCell].net > 1E10)
-//            return 1E10;
-//        else if (origin[iCell].net < -1E10)
-//            return -1E10;
-//        else
-//            return 0;
-//    }
+    //    /** Function to give other classes access to the intensity
+    //     * Put safegaurds on the intensity read so that the rhs doesn't break if the time stepper decides to put absurd values into the eos for fun
+    //     * */
+    //    inline PetscReal GetIntensity(PetscInt iCell) {
+    //        if (abs(origin[iCell].net) < 1E10)
+    //            return origin[iCell].net;
+    //        else if (origin[iCell].net > 1E10)
+    //            return 1E10;
+    //        else if (origin[iCell].net < -1E10)
+    //            return -1E10;
+    //        else
+    //            return 0;
+    //    }
 
     /// Class Methods
     /** The solve function evaluates the net radiation source term. However, the net radiation value must be updated by each solver individually.
@@ -105,6 +104,9 @@ class Radiation : protected utilities::Loggable<Radiation> {  //!< Cell solver p
     virtual PetscInt GetLossCell(PetscInt iCell, PetscReal& losses, DM solDm, DM pPDm);  //!< Get the index of the cell which the losses should be calculated from
     virtual void GetFuelEmissivity(double& kappa);
 
+    //! Cell range storing the radiation solver region without ghost points.
+    solver::DynamicRange radiationCellRange;
+
    protected:
     //! DM which the search particles occupy.  This representations the physical particle in space
     DM radSearch = nullptr;
@@ -115,7 +117,6 @@ class Radiation : protected utilities::Loggable<Radiation> {  //!< Cell solver p
 
     //! create a data type to simplify moving the carrier
     MPI_Datatype carrierMpiType;
-
 
     /** Segments belong to the local maps and hold all of the local information about the ray segments both during the search and the solve */
     struct Segment {
@@ -161,7 +162,6 @@ class Radiation : protected utilities::Loggable<Radiation> {  //!< Cell solver p
     PetscInt nPhi;     //!< The number of angles to solve with, given by user input (x2)
     PetscReal minCellRadius{};
 
-
     //! store the local rays identified on this rank.  This includes rays that do and do not originate on this rank
     std::vector<std::vector<Segment>> raySegments;
 
@@ -192,7 +192,7 @@ class Radiation : protected utilities::Loggable<Radiation> {  //!< Cell solver p
     //! hold a pointer to the absorptivity function
     eos::ThermodynamicTemperatureFunction absorptivityFunction;
 
-    // !Store a log used to output the required information
+    //! Store a log used to output the required information
     const std::shared_ptr<ablate::monitors::logs::Log> log = nullptr;
 
 };

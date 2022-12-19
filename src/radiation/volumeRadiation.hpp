@@ -46,7 +46,7 @@ class VolumeRadiation : public solver::CellSolver, public solver::RHSFunction {
 
     const std::shared_ptr<io::interval::Interval> interval;
     std::shared_ptr<ablate::radiation::Radiation> radiation;
-    solver::DynamicRange radiationCellRange;
+//    solver::DynamicRange radiationCellRange;
 };
 }  // namespace ablate::radiation
 #endif  // ABLATELIBRARY_VOLUMERADIATION_HPP
