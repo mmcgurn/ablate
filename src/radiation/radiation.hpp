@@ -55,7 +55,6 @@ class Radiation : protected utilities::Loggable<Radiation> {  //!< Cell solver p
     struct Carrier {
         PetscReal Ij = 0;    //!< Black body source for the segment. Make sure that this is reset every solve after the value has been transported.
         PetscReal Krad = 1;  //!< Absorption for the segment. Make sure that this is reset every solve after the value has been transported.
-        bool last = false;   //!< A tag that determines whether this ray segment is the last in its calculation. This will determine whether the initial intensity is attached to it.
     };
 
     /** Returns the black body intensity for a given temperature and emissivity */
@@ -69,19 +68,19 @@ class Radiation : protected utilities::Loggable<Radiation> {  //!< Cell solver p
      */
     virtual void Initialize(ablate::domain::SubDomain& subDomain);
 
-    //    /** Function to give other classes access to the intensity
-    //     * Put safegaurds on the intensity read so that the rhs doesn't break if the time stepper decides to put absurd values into the eos for fun
-    //     * */
-    //    inline PetscReal GetIntensity(PetscInt iCell) {
-    //        if (abs(origin[iCell].net) < 1E10)
-    //            return origin[iCell].net;
-    //        else if (origin[iCell].net > 1E10)
-    //            return 1E10;
-    //        else if (origin[iCell].net < -1E10)
-    //            return -1E10;
-    //        else
-    //            return 0;
-    //    }
+    /** Function to give other classes access to the intensity
+     * Put safegaurds on the intensity read so that the rhs doesn't break if the time stepper decides to put absurd values into the eos for fun
+     * */
+    inline PetscReal GetIntensity(PetscInt iCell) {
+        if (abs(origin[iCell].net) < 1E10)
+            return origin[iCell].net;
+        else if (origin[iCell].net > 1E10)
+            return 1E10;
+        else if (origin[iCell].net < -1E10)
+            return -1E10;
+        else
+            return 0;
+    }
 
     /// Class Methods
     /** The solve function evaluates the net radiation source term. However, the net radiation value must be updated by each solver individually.
