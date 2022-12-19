@@ -82,8 +82,7 @@ class Radiation : protected utilities::Loggable<Radiation> {  //!< Cell solver p
     /** Function to give other classes access to the intensity
      * Put safegaurds on the intensity read so that the rhs doesn't break if the time stepper decides to put absurd values into the eos for fun
      * */
-    // TODO: Need a way to map the vector index of the origin to the cell index that is being called.
-    // The the cell index could be bypassed if the radiation cell range was used to iterate through the cells.
+    // The cell index could be bypassed if the radiation cell range was used to iterate through the cells.
     inline PetscReal GetIntensity(PetscInt i) {
         if (abs(origin[i].net) < 1E10)
             return origin[i].net;
