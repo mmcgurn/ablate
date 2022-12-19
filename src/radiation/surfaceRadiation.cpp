@@ -8,7 +8,7 @@ ablate::radiation::SurfaceRadiation::SurfaceRadiation(const std::string& solverI
 ablate::radiation::SurfaceRadiation::~SurfaceRadiation() {
 }
 
-void ablate::radiation::SurfaceRadiation::Initialize(const solver::Range& cellRange, ablate::domain::SubDomain& subDomain) { /** Declare some information associated with the field declarations */
+void ablate::radiation::SurfaceRadiation::Initialize(ablate::domain::SubDomain& subDomain) { /** Declare some information associated with the field declarations */
     StartEvent("SurfaceRadiation::Initialize");
     PetscReal* coord;
     PetscInt* index;                    //!< Pointer to the coordinate field information
@@ -53,7 +53,7 @@ void ablate::radiation::SurfaceRadiation::Initialize(const solver::Range& cellRa
     DMSwarmRestoreField(radSearch, "virtual coord", nullptr, nullptr, (void**)&virtualcoord) >> checkError;
 
     EndEvent();
-    ablate::radiation::Radiation::Initialize(cellRange, subDomain);
+    ablate::radiation::Radiation::Initialize(subDomain);
 }
 
 PetscReal ablate::radiation::SurfaceRadiation::SurfaceComponent(DM faceDM, const PetscScalar* faceGeomArray, PetscInt iCell, PetscInt nphi, PetscInt ntheta) {

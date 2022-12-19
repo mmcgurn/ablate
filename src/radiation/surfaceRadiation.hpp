@@ -12,7 +12,7 @@ class SurfaceRadiation : public ablate::radiation::Radiation {
                      std::shared_ptr<ablate::monitors::logs::Log> = {});
     ~SurfaceRadiation();
 
-    void Initialize(const solver::Range& cellRange, ablate::domain::SubDomain& subDomain) override;
+    void Initialize(ablate::domain::SubDomain& subDomain) override;
     PetscReal SurfaceComponent(DM faceDM, const PetscScalar* faceGeomArray, PetscInt iCell, PetscInt nphi, PetscInt ntheta) override;
     PetscInt GetLossCell(PetscInt iCell, PetscReal& losses, DM solDm, DM pPDm) override;
     void GetFuelEmissivity(double& kappa) override;

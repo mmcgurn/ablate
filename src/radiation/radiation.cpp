@@ -326,8 +326,8 @@ void ablate::radiation::Radiation::Initialize(ablate::domain::SubDomain& subDoma
     PetscSFSetUp(remoteAccess) >> checkError;
 
     // Size up the memory to hold the local calculations and the retrieved information
-    raySegmentsCalculation.resize(raySegments.size());
-    raySegmentSummary.resize(numberOfReturnedSegments);
+    PetscMalloc1(raySegments.size(), &raySegmentsCalculation);
+    PetscMalloc1(numberOfReturnedSegments, &raySegmentSummary);
 
     // Create a mpi data type to allow reducing the remoteRayCalculation to raySegmentSummary
     MPI_Type_contiguous(2, MPIU_REAL, &carrierMpiType);
@@ -368,13 +368,6 @@ void ablate::radiation::Radiation::Solve(Vec solVec, ablate::domain::Field tempe
     const PetscScalar* cellGeomArray;
     VecGetDM(cellGeomVec, &cellDM) >> checkError;
     VecGetArrayRead(cellGeomVec, &cellGeomArray) >> checkError;
-
-    //    solver::Range cellRange;
-    //    GetCellRange(cellRange);  //!< Gets the cell range that should be applied to the radiation solver
-    //
-    //    // check for ghost cells
-    //    DMLabel ghostLabel;
-    //    DMGetLabel(subDomain->GetDM(), "ghost", &ghostLabel) >> checkError;
 
     if (log) log->Printf("x           y           z           G           L           T\n");  //!< Line labelling the log outputs for readability
 
@@ -477,9 +470,7 @@ void ablate::radiation::Radiation::ParticleStep(ablate::domain::SubDomain& subDo
         /** Check that the particle is in a valid region */
         if (index[ipart] >= 0 && subDomain.InRegion(index[ipart])) {
             auto& identifier = identifiers[ipart];
-            // If this local rank has never seen this search particle before, then it needs to add a new ray segment to local memory and record it's index
-            // TODO: This will add a carrier particle for every cell in every ray, creating an unnecessary amount of communication. The carrier particles can't be kept track of without something
-            //  resembling the presence map. This will create a carrier particle for every cell in every ray?
+            // If this local rank has never seen this search particle before, then it needs to add a new ray segment to local memory and record its index
             if (identifier.remoteRank != rank) {
                 // Update the identifier for this rank.  When it gets sent to another rank a copy will be made
                 identifier.remoteRank = rank;
@@ -517,11 +508,6 @@ void ablate::radiation::Radiation::ParticleStep(ablate::domain::SubDomain& subDo
              * particles may want to be given some information that the boundary label carries when the search particle happens upon it so that imperfect reflection can be implemented.
              * */
 
-            /** Step 1: Register the current cell index in the rays vector. The physical coordinates that have been set in the previous step / loop will be immediately registered.
-             * */
-            auto& raySegment = ray.emplace_back();
-            raySegment.cell = index[ipart];
-
             /** Step 2: Acquire the intersection of the particle search line with the segment or face. In the case if a two dimensional mesh, the virtual coordinate in the z direction will
              * need to be solved for because the three dimensional line will not have a literal intersection with the segment of the cell. The third coordinate can be solved for in this case.
              * Here we are figuring out what distance the ray spends inside the cell that it has just registered.
@@ -557,6 +543,9 @@ void ablate::radiation::Radiation::ParticleStep(ablate::domain::SubDomain& subDo
                 }
             }
             virtualcoords[ipart].hhere = (virtualcoords[ipart].hhere == 0) ? minCellRadius : virtualcoords[ipart].hhere;
+            auto& raySegment = ray.emplace_back();
+            raySegment.cell =
+                index[ipart];  //! Register the current cell index in the rays vector. The physical coordinates that have been set in the previous step / loop will be immediately registered.
             raySegment.h = virtualcoords[ipart].hhere;
         } else {
             virtualcoords[ipart].hhere = (virtualcoords[ipart].hhere == 0) ? minCellRadius : virtualcoords[ipart].hhere;
@@ -601,21 +590,9 @@ void ablate::radiation::Radiation::EvaluateGains(Vec solVec, ablate::domain::Fie
 
     auto absorptivityFunctionContext = absorptivityFunction.context.get();  //!< Get access to the absorption function
 
-    /** Declare some information associated with the field declarations */
-    struct Carrier* carrier;        //!< Pointer to the ray carrier information
-    struct Identifier* identifier;  //!< Pointer to the ray identifier information
-    struct Identifier* access;      //!< Pointer to the ray identifier information
-
     /** Get the current rank associated with this process */
     PetscMPIInt rank;
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);  //!< Get the origin rank of the current process. The particle belongs to this rank. The rank only needs to be read once.
-
-    /** Get all of the ray information from the particle
-     * Get the ntheta and nphi from the particle that is currently being looked at. This will be used to identify its ray and calculate its direction. */
-    //    DMSwarmGetLocalSize(radsolve, &npoints);  //!< Recalculate the number of particles that are in the domain
-    //    DMSwarmGetField(radsolve, IdentifierField, nullptr, nullptr, (void**)&identifier) >> checkError;
-    //    DMSwarmGetField(radsolve, "carrier", nullptr, nullptr, (void**)&carrier) >> checkError;
-    //    DMSwarmGetField(radsolve, "access", nullptr, nullptr, (void**)&access) >> checkError;
 
     /** ********************************************************************************************************************************
      * First the ray information should be zeroed in case they are carrying information from the last time step.
@@ -623,7 +600,7 @@ void ablate::radiation::Radiation::EvaluateGains(Vec solVec, ablate::domain::Fie
      *  Start by marching over all rays in this rank
      */
     for (std::size_t r = 0; r < raySegments.size(); r++) {
-        // zero our the calculation
+        // zero out the calculation
         raySegmentsCalculation[r].Ij = 0.0;
         raySegmentsCalculation[r].Krad = 1.0;
     }
@@ -672,32 +649,8 @@ void ablate::radiation::Radiation::EvaluateGains(Vec solVec, ablate::domain::Fie
     }
 
     /** ********************************************************************************************************************************
-     * Now the carrier has all of the information from the rays that are needed to compute the final ray intensity. Therefore, we will perform the migration.
-     * Then, all of the carrier particles will be looped through and the local Origins associated with each cell will be updated
+     * Now perform the migration step to transfer information from the local memory to the ray origins
      * */
-    // TODO: The communication step with PETSc SF will be performed here
-
-    //    236:     PetscInt *rootdata, *leafdata;
-    //    237:     PetscMalloc2(nrootsalloc, &rootdata, nleavesalloc, &leafdata);
-    //    238:     /* Initialize rootdata buffer in which the result of the reduction will appear. */
-    //    239:     for (i = 0; i < nrootsalloc; i++) rootdata[i] = -1;
-    //    240:     for (i = 0; i < nroots; i++) rootdata[i * stride] = 100 * (rank + 1) + i;
-    //    241:     /* Set leaf values to reduce. */
-    //    242:     for (i = 0; i < nleavesalloc; i++) leafdata[i] = -1;
-    //    243:     for (i = 0; i < nleaves; i++) leafdata[i * stride] = 1000 * (rank + 1) + 10 * i;
-    //    244:     PetscViewerASCIIPrintf(PETSC_VIEWER_STDOUT_WORLD, "## Pre-Reduce Rootdata\n");
-    //    245:     PetscIntView(nrootsalloc, rootdata, PETSC_VIEWER_STDOUT_WORLD);
-    //    246:     /* Perform reduction. Computation or other communication can be performed between the begin and end calls.
-    //    247:      * This example sums the values, but other MPI_Ops can be used (e.g MPI_MAX, MPI_PROD). */
-    //    248:     PetscSFReduceBegin(sf, MPIU_INT, leafdata, rootdata, mop);
-    //    249:     PetscSFReduceEnd(sf, MPIU_INT, leafdata, rootdata, mop);
-    //    250:     PetscViewerASCIIPrintf(PETSC_VIEWER_STDOUT_WORLD, "## Reduce Leafdata\n");
-    //    251:     PetscIntView(nleavesalloc, leafdata, PETSC_VIEWER_STDOUT_WORLD);
-    //    252:     PetscViewerASCIIPrintf(PETSC_VIEWER_STDOUT_WORLD, "## Reduce Rootdata\n");
-    //    253:     PetscIntView(nrootsalloc, rootdata, PETSC_VIEWER_STDOUT_WORLD);
-    //    254:     PetscFree2(rootdata, leafdata);
-
-    // TODO: PETSc SF will not take a vector as an input. There isn't any reason that this can't be converted to pure arrays at the end of the initialization.
 
     PetscSFReduceBegin(remoteAccess, carrierMpiType, raySegmentsCalculation, raySegmentSummary, MPI_MAX);
     PetscSFReduceEnd(remoteAccess, carrierMpiType, raySegmentsCalculation, raySegmentSummary, MPI_MAX);
@@ -706,7 +659,6 @@ void ablate::radiation::Radiation::EvaluateGains(Vec solVec, ablate::domain::Fie
      * Now iterate through all of the ray identifiers in order to compute the final ray intensities */
 
     PetscInt originRayId = 0;
-
     for (PetscInt c = radiationCellRange.GetRange().start; c < radiationCellRange.GetRange().end; ++c) {            //!< Iterate through the cells that are stored in the origin
         const PetscInt iCell = radiationCellRange.GetRange().points ? radiationCellRange.GetRange().points[c] : c;  //!< Isolates the valid cells
 
@@ -718,15 +670,13 @@ void ablate::radiation::Radiation::EvaluateGains(Vec solVec, ablate::domain::Fie
         for (PetscInt ntheta = 0; ntheta < nTheta; ntheta++) {
             for (PetscInt nphi = 0; nphi < nPhi; nphi++) {
                 /** Now that we are iterating over every ray identifier in this local domain, we can get all of the particles that are associated with this ray.
-                 * We will need to sort the rays in order of domain segment. We need to start at the end of the ray and go towards the beginning of the ray. */
-                // TODO: The routine for finding the maximum segment number is no longer necessary if the number of segments per ray is stored at the ray root
-
-                /** Iterate over the particles that are present in the domain
+                 * We will need to sort the rays in order of domain segment. We need to start at the end of the ray and go towards the beginning of the ray.
+                 * Iterate over the particles that are present in the domain
                  * The particles present at this point should represent the migrated carrier ray information in order to perform the final solve.
                  * The source and absorption must be set to zero at the beginning of each new ray.
                  * */
-                PetscReal Kradd = 1;    //!< This must be reset at the beginning of each new ray.
-                PetscReal Isource = 0;  //!< This must be reset at the beginning of each new ray.
+                PetscReal Kradd = 1.0;    //!< This must be reset at the beginning of each new ray.
+                PetscReal Isource = 0.0;  //!< This must be reset at the beginning of each new ray.
                 PetscInt nsegment = 0;
 
                 while (nsegment <= raySegmentsPerOriginRay[originRayId]) {  //!< Need to go through all of the ray segments until the origin of the ray is reached
@@ -754,7 +704,6 @@ void ablate::radiation::Radiation::EvaluateGains(Vec solVec, ablate::domain::Fie
                 originRayId++;
             }
         }
-        origin[iCell].handler.clear();  //!< Eliminate all of the data being stored in the cell handler to free local memory
     }
 
     /** Cleanup */

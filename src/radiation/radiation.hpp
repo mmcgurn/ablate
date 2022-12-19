@@ -17,7 +17,7 @@ namespace ablate::radiation {
 
 class Radiation : protected utilities::Loggable<Radiation> {  //!< Cell solver provides cell based functionality, right hand side function compatibility with
                                                               //!< finite element/ volume, loggable allows for the timing and tracking of events
-   private:
+   protected:
     static inline constexpr char IdentifierField[] = "identifier";
     static inline constexpr char VirtualCoordField[] = "virtual coord";
 
@@ -57,6 +57,17 @@ class Radiation : protected utilities::Loggable<Radiation> {  //!< Cell solver p
         PetscReal Krad = 1;  //!< Absorption for the segment. Make sure that this is reset every solve after the value has been transported.
     };
 
+    /** Each origin cell will need to retain local information given to it by the ray segments in order to compute the final intensity.
+     * This information will be owned by cell index and stored in a map of local cell indices.
+     * */
+    struct Origin {
+        PetscReal intensity = 0;  //!< The irradiation value that will be contributed to by every ray. This is updated every (pre-step && interval) gain evaluation.
+        PetscReal net = 0;        //!< The net radiation value including the losses. This is updated every pre-stage solve.
+    };
+
+    std::map<PetscInt, Origin> origin;  //! Stores the solution of the radiation solve
+    std::vector<bool> presence;         //! Track the local presence of search particles during the initialization
+
     /** Returns the black body intensity for a given temperature and emissivity */
     static PetscReal FlameIntensity(PetscReal epsilon, PetscReal temperature);
 
@@ -71,12 +82,14 @@ class Radiation : protected utilities::Loggable<Radiation> {  //!< Cell solver p
     /** Function to give other classes access to the intensity
      * Put safegaurds on the intensity read so that the rhs doesn't break if the time stepper decides to put absurd values into the eos for fun
      * */
-    inline PetscReal GetIntensity(PetscInt iCell) {
-        if (abs(origin[iCell].net) < 1E10)
-            return origin[iCell].net;
-        else if (origin[iCell].net > 1E10)
+    // TODO: Need a way to map the vector index of the origin to the cell index that is being called.
+    // The the cell index could be bypassed if the radiation cell range was used to iterate through the cells.
+    inline PetscReal GetIntensity(PetscInt i) {
+        if (abs(origin[i].net) < 1E10)
+            return origin[i].net;
+        else if (origin[i].net > 1E10)
             return 1E10;
-        else if (origin[iCell].net < -1E10)
+        else if (origin[i].net < -1E10)
             return -1E10;
         else
             return 0;
@@ -165,7 +178,7 @@ class Radiation : protected utilities::Loggable<Radiation> {  //!< Cell solver p
     std::vector<std::vector<Segment>> raySegments;
 
     //! the calculation over each of the remoteRays. indexed over remote ray
-    std::vector<Carrier> raySegmentsCalculation;
+    Carrier* raySegmentsCalculation;
 
     //! store the number of originating rays
     PetscInt numberOriginRays;
@@ -174,7 +187,7 @@ class Radiation : protected utilities::Loggable<Radiation> {  //!< Cell solver p
     std::vector<unsigned short int> raySegmentsPerOriginRay;
 
     //! a vector of raySegment information for every local/remote ray segment ordered as ray, segment
-    std::vector<Carrier> raySegmentSummary;
+    Carrier* raySegmentSummary;
 
     //! Store the petscSF that is used for pulling remote ray calculation
     PetscSF remoteAccess;
@@ -193,7 +206,6 @@ class Radiation : protected utilities::Loggable<Radiation> {  //!< Cell solver p
 
     //! Store a log used to output the required information
     const std::shared_ptr<ablate::monitors::logs::Log> log = nullptr;
-
 };
 
 }  // namespace ablate::radiation

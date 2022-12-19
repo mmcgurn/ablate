@@ -95,7 +95,7 @@ void ablate::boundarySolver::physics::Sublimation::Initialize(ablate::boundarySo
             if (!(ghost >= 0)) faceRange.Add(i.geometry.faceId);  //!< Add each ID to the range that the radiation solver will use
         }
         radiation->Setup(faceRange.GetRange(), bSolver.GetSubDomain());
-        radiation->Initialize(faceRange.GetRange(), bSolver.GetSubDomain());  //!< Pass the non-dynamic range into the radiation solver
+        radiation->Initialize(bSolver.GetSubDomain());  //!< Pass the non-dynamic range into the radiation solver
 
         bSolver.RegisterPreRHSFunction(SublimationPreRHS, this);
     }
