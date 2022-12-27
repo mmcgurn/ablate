@@ -4,6 +4,8 @@
 #include <petscdmswarm.h>
 #include <petscsf.h>
 #include <unistd.h>
+#include <fstream>
+#include <iostream>
 #include <utility>
 #include "finiteVolume/compressibleFlowFields.hpp"
 #include "finiteVolume/finiteVolumeSolver.hpp"
@@ -339,14 +341,17 @@ void ablate::radiation::Radiation::Initialize(const solver::Range& cellRange, ab
     PetscSFCreate(PETSC_COMM_WORLD, &remoteAccess) >> checkError;
     PetscSFSetFromOptions(remoteAccess) >> checkError;
 
-    utilities::MpiUtilities::RoundRobin(PETSC_COMM_WORLD, [&numberOfReturnedSegments, remoteRayInformation](auto rank){
-        std::cout << "remoteRayInformation for rank: " << rank << " numberOfReturnedSegments " << numberOfReturnedSegments << std::endl;
-        for(PetscInt i =0; i < numberOfReturnedSegments; ++i){
-            std::cout << remoteRayInformation[i].rank << ", " << remoteRayInformation[i].index << std::endl;
-        }
-        sleep(1000);
-    });
+    int rank;
+    MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
+    std::ofstream file;
+    file.open("info." + std::to_string(rank) + ".log");
+    file << "remoteRayInformation for rank: " << rank << " numberOfReturnedSegments " << numberOfReturnedSegments << std::endl;
+    for (PetscInt i = 0; i < numberOfReturnedSegments; ++i) {
+        file << remoteRayInformation[i].rank << ", " << remoteRayInformation[i].index << std::endl;
+    }
+    file.close();
 
+    MPI_Barrier(PETSC_COMM_WORLD);
     PetscSFSetGraph(remoteAccess, (PetscInt)raySegments.size(), numberOfReturnedSegments, nullptr, PETSC_OWN_POINTER, remoteRayInformation, PETSC_OWN_POINTER) >> checkError;
     PetscSFSetUp(remoteAccess) >> checkError;
 
