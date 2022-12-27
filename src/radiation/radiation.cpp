@@ -350,9 +350,9 @@ void ablate::radiation::Radiation::Initialize(const solver::Range& cellRange, ab
         raySegmentsPerOriginRay[returnIdentifiers[p].originRayId]++;
     }
 
-    std::cout << "raySegmentsPerOriginRay: " << std::endl;
+    file << "raySegmentsPerOriginRay: " << std::endl;
     for (PetscInt p = 0; p < numberOriginRays; ++p) {
-        file << p << ": " << raySegmentsPerOriginRay[numberOriginRays] << std::endl;
+        file << p << ": " << raySegmentsPerOriginRay[p] << std::endl;
     }
 
     // Keep track of the offset for each originRay assuming the memory is in order
@@ -361,6 +361,11 @@ void ablate::radiation::Radiation::Initialize(const solver::Range& cellRange, ab
     for (std::size_t r = 0; r < raySegmentsPerOriginRay.size(); r++) {
         rayOffset[r] = offset;
         offset += raySegmentsPerOriginRay[r];
+    }
+
+    file << "rayOffset: " << std::endl;
+    for (std::size_t p = 0; p < rayOffset.size(); ++p) {
+        file << p << ": " << rayOffset[p] << std::endl;
     }
 
     /* Build the leafs for the petscSf.
