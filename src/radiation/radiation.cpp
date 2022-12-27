@@ -287,10 +287,54 @@ void ablate::radiation::Radiation::Initialize(const solver::Range& cellRange, ab
     VecRestoreArrayRead(faceGeomVec, &faceGeomArray) >> checkError;
     EndEvent();
 
+    int rank;
+    MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
+    std::ofstream file;
+    file.open("info." + std::to_string(rank) + ".log");
+    file << "before DMSwarmMigrate " << std::endl;
+    {
+        struct Identifier* returnIdentifiers;                                                                     //!< Pointer to the ray identifier information
+        PetscInt * returnRank;
+        DMSwarmGetField(radReturn, IdentifierField, nullptr, nullptr, (void**)&returnIdentifiers) >>
+            checkError;  //!< Get the fields from the radsolve swarm so the new point can be written to them
+        DMSwarmGetField(radReturn, DMSwarmField_rank, nullptr, nullptr, (void**)&returnRank) >> checkError;
+
+        PetscInt numberLocal;
+        DMSwarmGetLocalSize(radReturn, &numberLocal) >> checkError;
+        file << "Number Local Particle: " << numberLocal << std::endl;
+        for(PetscInt p =0; p < numberLocal; ++p){
+            file << p << ": " << returnIdentifiers[p].remoteRank << ", " << returnIdentifiers[p].remoteRayId << ", " << returnRank[p] << std::endl;
+        }
+
+        DMSwarmRestoreField(radReturn, IdentifierField, nullptr, nullptr, (void**)&returnIdentifiers) >>
+            checkError;  //!< Get the fields from the radsolve swarm so the new point can be written to them
+        DMSwarmRestoreField(radReturn, DMSwarmField_rank, nullptr, nullptr, (void**)&returnRank) >> checkError;
+    }
+
     // Move the identifiers in radReturn back to origin
     StartEvent("Radiation::RadReturn");
     DMSwarmMigrate(radReturn, PETSC_TRUE) >> checkError;
     EndEvent();
+
+    file << "after DMSwarmMigrate " << std::endl;
+    {
+        struct Identifier* returnIdentifiers;                                                                     //!< Pointer to the ray identifier information
+        PetscInt * returnRank;
+        DMSwarmGetField(radReturn, IdentifierField, nullptr, nullptr, (void**)&returnIdentifiers) >>
+            checkError;  //!< Get the fields from the radsolve swarm so the new point can be written to them
+        DMSwarmGetField(radReturn, DMSwarmField_rank, nullptr, nullptr, (void**)&returnRank) >> checkError;
+
+        PetscInt numberLocal;
+        DMSwarmGetLocalSize(radReturn, &numberLocal) >> checkError;
+        file << "Number Local Particle: " << numberLocal << std::endl;
+        for(PetscInt p =0; p < numberLocal; ++p){
+            file << p << ": " << returnIdentifiers[p].remoteRank << ", " << returnIdentifiers[p].remoteRayId << ", " << returnRank[p] << std::endl;
+        }
+
+        DMSwarmRestoreField(radReturn, IdentifierField, nullptr, nullptr, (void**)&returnIdentifiers) >>
+            checkError;  //!< Get the fields from the radsolve swarm so the new point can be written to them
+        DMSwarmRestoreField(radReturn, DMSwarmField_rank, nullptr, nullptr, (void**)&returnRank) >> checkError;
+    }
 
     /* radReturn contains a list of all ranks (including this one) that contain segments for each ray.
      * Count the number of ray segments per ray
@@ -299,7 +343,7 @@ void ablate::radiation::Radiation::Initialize(const solver::Range& cellRange, ab
 
     // March over each returned segment and add to the numberOriginRays
     PetscInt numberOfReturnedSegments;
-    DMSwarmGetLocalSize(radReturn, &numberOfReturnedSegments);
+    DMSwarmGetLocalSize(radReturn, &numberOfReturnedSegments) >> checkError;
     struct Identifier* returnIdentifiers;                                                                     //!< Pointer to the ray identifier information
     DMSwarmGetField(radReturn, IdentifierField, nullptr, nullptr, (void**)&returnIdentifiers) >> checkError;  //!< Get the fields from the radsolve swarm so the new point can be written to them
     for (PetscInt p = 0; p < numberOfReturnedSegments; ++p) {
@@ -341,10 +385,7 @@ void ablate::radiation::Radiation::Initialize(const solver::Range& cellRange, ab
     PetscSFCreate(PETSC_COMM_WORLD, &remoteAccess) >> checkError;
     PetscSFSetFromOptions(remoteAccess) >> checkError;
 
-    int rank;
-    MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
-    std::ofstream file;
-    file.open("info." + std::to_string(rank) + ".log");
+
     file << "remoteRayInformation for rank: " << rank << " numberOfReturnedSegments " << numberOfReturnedSegments << std::endl;
     for (PetscInt i = 0; i < numberOfReturnedSegments; ++i) {
         file << remoteRayInformation[i].rank << ", " << remoteRayInformation[i].index << std::endl;
