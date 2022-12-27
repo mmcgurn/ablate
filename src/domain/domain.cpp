@@ -127,6 +127,9 @@ std::shared_ptr<ablate::domain::SubDomain> ablate::domain::Domain::GetSubDomain(
     if (region) {
         // March over each ds region, and return the subdomain if this region is inside of any subDomain region
         for (const auto& subDomain : subDomains) {
+            std::cout << "ablate::domain::Domain::GetSubDomain: subDomain " << subDomain.get() << std::endl;
+            std::cout << "ablate::domain::Domain::GetSubDomain: region" << region.get() << std::endl;
+
             if (subDomain->InRegion(*region)) {
                 return subDomain;
             }

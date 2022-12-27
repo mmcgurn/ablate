@@ -3,10 +3,12 @@
 #include <petscdm.h>
 #include <petscdmswarm.h>
 #include <petscsf.h>
+#include <unistd.h>
 #include <utility>
 #include "finiteVolume/compressibleFlowFields.hpp"
 #include "finiteVolume/finiteVolumeSolver.hpp"
 #include "utilities/mpiError.hpp"
+#include "utilities/mpiUtilities.hpp"
 
 ablate::radiation::Radiation::Radiation(const std::string& solverId, const std::shared_ptr<domain::Region>& region, const PetscInt raynumber,
                                         std::shared_ptr<eos::radiationProperties::RadiationModel> radiationModelIn, std::shared_ptr<ablate::monitors::logs::Log> log)
@@ -336,6 +338,15 @@ void ablate::radiation::Radiation::Initialize(const solver::Range& cellRange, ab
     // Create the remote access structure
     PetscSFCreate(PETSC_COMM_WORLD, &remoteAccess) >> checkError;
     PetscSFSetFromOptions(remoteAccess) >> checkError;
+
+    utilities::MpiUtilities::RoundRobin(PETSC_COMM_WORLD, [&numberOfReturnedSegments, remoteRayInformation](auto rank){
+        std::cout << "remoteRayInformation for rank: " << rank << " numberOfReturnedSegments " << numberOfReturnedSegments << std::endl;
+        for(PetscInt i =0; i < numberOfReturnedSegments; ++i){
+            std::cout << remoteRayInformation[i].rank << ", " << remoteRayInformation[i].index << std::endl;
+        }
+        sleep(1000);
+    });
+
     PetscSFSetGraph(remoteAccess, (PetscInt)raySegments.size(), numberOfReturnedSegments, nullptr, PETSC_OWN_POINTER, remoteRayInformation, PETSC_OWN_POINTER) >> checkError;
     PetscSFSetUp(remoteAccess) >> checkError;
 
