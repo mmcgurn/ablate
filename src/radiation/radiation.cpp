@@ -350,6 +350,11 @@ void ablate::radiation::Radiation::Initialize(const solver::Range& cellRange, ab
         raySegmentsPerOriginRay[returnIdentifiers[p].originRayId]++;
     }
 
+    std::cout << "raySegmentsPerOriginRay: " << std::endl;
+    for (PetscInt p = 0; p < numberOriginRays; ++p) {
+        file << p << ": " << raySegmentsPerOriginRay[numberOriginRays] << std::endl;
+    }
+
     // Keep track of the offset for each originRay assuming the memory is in order
     std::vector<PetscInt> rayOffset(numberOriginRays);
     PetscInt offset = 0;
