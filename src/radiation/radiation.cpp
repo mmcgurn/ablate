@@ -38,14 +38,16 @@ static void CheckForDuplicates(std::string info, DM dmSwarm){
     MPI_Allreduce(MPI_IN_PLACE, &maxParticleId, 1, MPIU_INT64, MPI_MAX, PetscObjectComm((PetscObject) dmSwarm)) >> ablate::checkMpiError;
     std::cout << "maxParticleId: " << maxParticleId << std::endl;
     std::vector<PetscInt64> count(maxParticleId+1, 0);
-    for(PetscInt p =0;p < localSize; ++p){
-        count[pid[p]]++;
-    }
+//    for(PetscInt p =0;p < localSize; ++p){
+//        count[pid[p]]++;
+//    }
 
     DMSwarmRestoreField(dmSwarm, DMSwarmField_pid, nullptr, nullptr, (void**)&pid) >> ablate::checkError;
 
     // sum across all ranks
+    std::cout << "befoer count reduce" << std::endl;
     MPI_Allreduce(MPI_IN_PLACE, count.data(), count.size(), MPIU_INT64, MPI_SUM, PetscObjectComm((PetscObject) dmSwarm)) >> ablate::checkMpiError;
+    std::cout << "after count reduce" << std::endl;
 
     int rank;
     MPI_Comm_rank(PetscObjectComm((PetscObject) dmSwarm), &rank);
