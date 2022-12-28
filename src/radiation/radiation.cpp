@@ -42,7 +42,10 @@ static void CheckForDuplicates(std::string info, DM dmSwarm) {
         count[pid[p]]++;
     }
 
-    DMSwarmRestoreField(dmSwarm, DMSwarmField_pid, nullptr, nullptr, (void**)&pid) >> ablate::checkError;
+    PetscReal* coord;
+    DMSwarmGetField(dmSwarm, DMSwarmPICField_coor, nullptr, nullptr, (void**)&coord) >> ablate::checkError;
+    PetscInt dim;
+    DMGetDimension(dmSwarm, &dim) >> ablate::checkError;
 
     // sum across all ranks
     MPI_Allreduce(count.data(), globalCount.data(), count.size(), MPIU_INT64, MPI_SUM, PetscObjectComm((PetscObject)dmSwarm)) >> ablate::checkMpiError;
@@ -58,16 +61,25 @@ static void CheckForDuplicates(std::string info, DM dmSwarm) {
 
     for (std::size_t i = 0; i < globalCount.size(); ++i) {
         if (globalCount[i] > 1) {
-            if(rank == 0) {
+            if (rank == 0) {
                 std::cout << "duplicatesFound at " << i << " total " << globalCount[i] << std::endl;
             }
-            ablate::utilities::MpiUtilities::RoundRobin(PetscObjectComm((PetscObject)dmSwarm), [&count, i](auto rank) {
+            ablate::utilities::MpiUtilities::RoundRobin(PetscObjectComm((PetscObject)dmSwarm), [&count, i, localSize, pid, coord, dim](auto rank) {
                 if (count[i] > 0) {
                     std::cout << "\t" << rank << " -> " << count[i] << std::endl;
+                    std::cout << "\t locations:" << std::endl;
+                    for (PetscInt p = 0; p < localSize; ++p) {
+                        if (pid[p] == (PetscInt64)i) {
+                            std::cout << "\t\t" << p << ": " << coord[p * dim] << ", " << coord[p * dim + 1] << ", " << coord[p * dim + 1] << std::endl;
+                        }
+                    }
                 }
             });
         }
     }
+
+    DMSwarmRestoreField(dmSwarm, DMSwarmField_pid, nullptr, nullptr, (void**)&pid) >> ablate::checkError;
+    DMSwarmRestoreField(dmSwarm, DMSwarmPICField_coor, nullptr, nullptr, (void**)&coord) >> ablate::checkError;
 }
 
 /** allows initialization after the subdomain and dm is established */
