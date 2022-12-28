@@ -232,6 +232,36 @@ void ablate::radiation::Radiation::Setup(const solver::Range& cellRange, ablate:
 
     CheckForDuplicates("beforeMigrate", radSearch);
 
+
+    {
+        Vec coords;
+        VecCreate(PETSC_COMM_SELF, &coords);
+        VecSetBlockSize(coords, 3);
+        VecSetSizes(coords, 1*3, PETSC_DECIDE);
+        VecSetFromOptions(coords);
+        PetscInt i[3] = {0, 1, 2};
+        PetscReal position[3] = {0.0280511, 0.00346286, 0.00346286};
+
+        VecSetValues(coords, 3, i, position, INSERT_VALUES);
+        VecAssemblyBegin(coords);
+        VecAssemblyEnd(coords);
+
+        // locate
+        PetscSF            sfcell = NULL;
+        DMLocatePoints( subDomain.GetDM(), coords, DM_POINTLOCATION_NONE, &sfcell );
+
+        const PetscSFNode *cells;
+        PetscInt           nFound;
+        const PetscInt    *found;
+        PetscSFGetGraph(sfcell,NULL,&nFound,&found,&cells);
+
+        PetscSynchronizedPrintf(PETSC_COMM_WORLD, "Rank %d found %" PetscInt_FMT "\n", rank, nFound);
+        PetscSynchronizedFlush(PETSC_COMM_WORLD, PETSC_STDOUT);
+
+        PetscSFDestroy(&sfcell);
+    }
+
+
     DMSwarmMigrate(radSearch, PETSC_TRUE) >> checkError;  //!< Sets the search particles in the cell indexes to which they have been assigned
     CheckForDuplicates("afterMigrate", radSearch);
 
