@@ -58,7 +58,9 @@ static void CheckForDuplicates(std::string info, DM dmSwarm) {
 
     for (std::size_t i = 0; i < globalCount.size(); ++i) {
         if (globalCount[i] > 1) {
-            std::cout << "duplicatesFound at " << i << " total " << globalCount[i] << std::endl;
+            if(rank == 0) {
+                std::cout << "duplicatesFound at " << i << " total " << globalCount[i] << std::endl;
+            }
             ablate::utilities::MpiUtilities::RoundRobin(PetscObjectComm((PetscObject)dmSwarm), [&count, i](auto rank) {
                 if (count[i] > 0) {
                     std::cout << "\t" << rank << " -> " << count[i] << std::endl;
