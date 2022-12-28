@@ -51,9 +51,9 @@ static void CheckForDuplicates(std::string info, DM dmSwarm){
 
     int rank;
     MPI_Comm_rank(PetscObjectComm((PetscObject) dmSwarm), &rank);
+    PetscInt globalSize;
+    DMSwarmGetSize(dmSwarm, &globalSize) >> ablate::checkError;
     if(rank ==0){
-        PetscInt globalSize;
-        DMSwarmGetSize(dmSwarm, &globalSize);
         std::cout << info << std::endl;
         std::cout << "globalSize: " << globalSize << std::endl;
 
