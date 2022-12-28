@@ -240,7 +240,7 @@ void ablate::radiation::Radiation::Setup(const solver::Range& cellRange, ablate:
         VecSetSizes(coords, 1 * 3, PETSC_DECIDE);
         VecSetFromOptions(coords);
         PetscInt i[3] = {0, 1, 2};
-        PetscReal position[3] = {0.0280511, 0.00346286, 0.00346286};
+        PetscReal position[3] = {0.028051125, 0.00346285709364309, -0.00380659755473643};
 
         VecSetValues(coords, 3, i, position, INSERT_VALUES);
         VecAssemblyBegin(coords);
