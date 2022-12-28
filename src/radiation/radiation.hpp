@@ -44,6 +44,15 @@ class Radiation : protected utilities::Loggable<Radiation> {  //!< Cell solver p
         PetscInt remoteRayId;
         //! The number of segments away from the origin, zero on the origin
         PetscInt nSegment;
+
+        /**
+         * checks if the Identifier has been used, not that remoteRayId is not part of the euqls
+         * @param other
+         * @return
+         */
+        inline bool operator==(const Identifier& other) const {
+            return originRank == other.originRank && originRayId == other.originRayId && remoteRank == other.remoteRank && nSegment == other.nSegment;
+        }
     };
 
     /** Carriers are attached to the solve particles and bring ray information from the local segments to the origin cells
