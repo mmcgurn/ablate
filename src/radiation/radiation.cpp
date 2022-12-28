@@ -21,7 +21,7 @@ ablate::radiation::Radiation::~Radiation() {
     if (remoteAccess) PetscSFDestroy(&remoteAccess) >> checkError;
 }
 
-static void CheckForDuplicates(std::string info, DM dmSwarm){
+static void CheckForDuplicates(std::string info, DM dmSwarm) {
     PetscInt64* pid;
     PetscInt localSize;
     DMSwarmGetLocalSize(dmSwarm, &localSize);
@@ -31,43 +31,42 @@ static void CheckForDuplicates(std::string info, DM dmSwarm){
 
     // Find the maximum particle id
     PetscInt64 maxParticleId = 0;
-    for(PetscInt p =0;p < localSize; ++p){
+    for (PetscInt p = 0; p < localSize; ++p) {
         maxParticleId = PetscMax(maxParticleId, pid[p]);
     }
 
-    MPI_Allreduce(MPI_IN_PLACE, &maxParticleId, 1, MPIU_INT64, MPI_MAX, PetscObjectComm((PetscObject) dmSwarm)) >> ablate::checkMpiError;
-    std::cout << "maxParticleId: " << maxParticleId << std::endl;
-    std::vector<PetscInt64> count(maxParticleId+1, 0);
-    for(PetscInt p =0;p < localSize; ++p){
+    MPI_Allreduce(MPI_IN_PLACE, &maxParticleId, 1, MPIU_INT64, MPI_MAX, PetscObjectComm((PetscObject)dmSwarm)) >> ablate::checkMpiError;
+    std::vector<PetscInt64> count(maxParticleId + 1, 0);
+    std::vector<PetscInt64> globalCount(maxParticleId + 1, 0);
+    for (PetscInt p = 0; p < localSize; ++p) {
         count[pid[p]]++;
     }
 
     DMSwarmRestoreField(dmSwarm, DMSwarmField_pid, nullptr, nullptr, (void**)&pid) >> ablate::checkError;
 
     // sum across all ranks
-    std::cout << "befoer count reduce" << std::endl;
-    MPI_Allreduce(MPI_IN_PLACE, count.data(), count.size(), MPIU_INT64, MPI_SUM, PetscObjectComm((PetscObject) dmSwarm)) >> ablate::checkMpiError;
-    std::cout << "after count reduce" << std::endl;
+    MPI_Allreduce(count.data(), globalCount.data(), count.size(), MPIU_INT64, MPI_SUM, PetscObjectComm((PetscObject)dmSwarm)) >> ablate::checkMpiError;
 
     int rank;
-    MPI_Comm_rank(PetscObjectComm((PetscObject) dmSwarm), &rank);
+    MPI_Comm_rank(PetscObjectComm((PetscObject)dmSwarm), &rank);
     PetscInt globalSize;
     DMSwarmGetSize(dmSwarm, &globalSize) >> ablate::checkError;
-    if(rank ==0){
+    if (rank == 0) {
         std::cout << info << std::endl;
         std::cout << "globalSize: " << globalSize << std::endl;
-
-        for(std::size_t i =0; i < count.size(); ++i){
-            if(count[i] > 1){
-                std::cout << "duplicatesFound at " << i << " total " << count[i] << std::endl;
-            }
-        }
     }
 
-
-
+    for (std::size_t i = 0; i < globalCount.size(); ++i) {
+        if (globalCount[i] > 1) {
+            std::cout << "duplicatesFound at " << i << " total " << globalCount[i] << std::endl;
+            ablate::utilities::MpiUtilities::RoundRobin(PetscObjectComm((PetscObject)dmSwarm), [&count, i](auto rank) {
+                if (count[i] > 0) {
+                    std::cout << "\t" << rank << " -> " << count[i] << std::endl;
+                }
+            });
+        }
+    }
 }
-
 
 /** allows initialization after the subdomain and dm is established */
 void ablate::radiation::Radiation::Setup(const solver::Range& cellRange, ablate::domain::SubDomain& subDomain) {
@@ -151,17 +150,11 @@ void ablate::radiation::Radiation::Setup(const solver::Range& cellRange, ablate:
     particlesPerRank[rank] = numberOriginRays;
     std::vector<PetscInt> particlesPerRankReduction(size, 0);
 
-    MPI_Allreduce(
-        particlesPerRank.data(),
-        particlesPerRankReduction.data(),
-        particlesPerRank.size(),
-        MPIU_INT,
-        MPI_SUM,
-        PETSC_COMM_WORLD);
+    MPI_Allreduce(particlesPerRank.data(), particlesPerRankReduction.data(), particlesPerRank.size(), MPIU_INT, MPI_SUM, PETSC_COMM_WORLD);
 
     // Determine the current offset
     PetscInt64 offset = 0;
-    for(PetscInt r =0; r < rank; ++r){
+    for (PetscInt r = 0; r < rank; ++r) {
         offset += particlesPerRankReduction[r];
     }
 
@@ -376,16 +369,15 @@ void ablate::radiation::Radiation::Initialize(const solver::Range& cellRange, ab
     file.open("info." + std::to_string(rank) + ".log");
     file << "before DMSwarmMigrate " << std::endl;
     {
-        struct Identifier* returnIdentifiers;                                                                     //!< Pointer to the ray identifier information
-        PetscInt * returnRank;
-        DMSwarmGetField(radReturn, IdentifierField, nullptr, nullptr, (void**)&returnIdentifiers) >>
-            checkError;  //!< Get the fields from the radsolve swarm so the new point can be written to them
+        struct Identifier* returnIdentifiers;  //!< Pointer to the ray identifier information
+        PetscInt* returnRank;
+        DMSwarmGetField(radReturn, IdentifierField, nullptr, nullptr, (void**)&returnIdentifiers) >> checkError;  //!< Get the fields from the radsolve swarm so the new point can be written to them
         DMSwarmGetField(radReturn, DMSwarmField_rank, nullptr, nullptr, (void**)&returnRank) >> checkError;
 
         PetscInt numberLocal;
         DMSwarmGetLocalSize(radReturn, &numberLocal) >> checkError;
         file << "Number Local Particle: " << numberLocal << std::endl;
-        for(PetscInt p =0; p < numberLocal; ++p){
+        for (PetscInt p = 0; p < numberLocal; ++p) {
             file << p << ": " << returnIdentifiers[p].remoteRank << ", " << returnIdentifiers[p].remoteRayId << ", " << returnRank[p] << std::endl;
         }
 
@@ -401,16 +393,15 @@ void ablate::radiation::Radiation::Initialize(const solver::Range& cellRange, ab
 
     file << "after DMSwarmMigrate " << std::endl;
     {
-        struct Identifier* returnIdentifiers;                                                                     //!< Pointer to the ray identifier information
-        PetscInt * returnRank;
-        DMSwarmGetField(radReturn, IdentifierField, nullptr, nullptr, (void**)&returnIdentifiers) >>
-            checkError;  //!< Get the fields from the radsolve swarm so the new point can be written to them
+        struct Identifier* returnIdentifiers;  //!< Pointer to the ray identifier information
+        PetscInt* returnRank;
+        DMSwarmGetField(radReturn, IdentifierField, nullptr, nullptr, (void**)&returnIdentifiers) >> checkError;  //!< Get the fields from the radsolve swarm so the new point can be written to them
         DMSwarmGetField(radReturn, DMSwarmField_rank, nullptr, nullptr, (void**)&returnRank) >> checkError;
 
         PetscInt numberLocal;
         DMSwarmGetLocalSize(radReturn, &numberLocal) >> checkError;
         file << "Number Local Particle: " << numberLocal << std::endl;
-        for(PetscInt p =0; p < numberLocal; ++p){
+        for (PetscInt p = 0; p < numberLocal; ++p) {
             file << p << ": " << returnIdentifiers[p].remoteRank << ", " << returnIdentifiers[p].remoteRayId << ", " << returnRank[p] << std::endl;
         }
 
@@ -433,12 +424,17 @@ void ablate::radiation::Radiation::Initialize(const solver::Range& cellRange, ab
         raySegmentsPerOriginRay[returnIdentifiers[p].originRayId]++;
     }
 
+    PetscInt64* pid;
+    /** Get the fields associated with the particle swarm so that they can be modified */
+    DMSwarmGetField(radReturn, DMSwarmField_pid, nullptr, nullptr, (void**)&pid) >> ablate::checkError;
 
     file << "returnIdentifiers: " << std::endl;
-    file << "particleId, originRank, originRayId, remoteRank, remoteRayId, nSegment" << std::endl;
+    file << "particleId, originRank, originRayId, remoteRank, remoteRayId, nSegment, pid" << std::endl;
     for (PetscInt p = 0; p < numberOfReturnedSegments; ++p) {
-        file << p << ", " << returnIdentifiers[p].originRank << ", " <<returnIdentifiers[p].originRayId  << ", " <<returnIdentifiers[p].remoteRank <<  ", " <<returnIdentifiers[p].remoteRayId << ", " <<returnIdentifiers[p].nSegment << std::endl;
+        file << p << ", " << returnIdentifiers[p].originRank << ", " << returnIdentifiers[p].originRayId << ", " << returnIdentifiers[p].remoteRank << ", " << returnIdentifiers[p].remoteRayId << ", "
+             << returnIdentifiers[p].nSegment << ", " << pid[p] << std::endl;
     }
+    DMSwarmRestoreField(radReturn, DMSwarmField_pid, nullptr, nullptr, (void**)&pid) >> ablate::checkError;
 
     file << "raySegmentsPerOriginRay: " << std::endl;
     for (PetscInt p = 0; p < numberOriginRays; ++p) {
@@ -484,7 +480,6 @@ void ablate::radiation::Radiation::Initialize(const solver::Range& cellRange, ab
     // Create the remote access structure
     PetscSFCreate(PETSC_COMM_WORLD, &remoteAccess) >> checkError;
     PetscSFSetFromOptions(remoteAccess) >> checkError;
-
 
     file << "remoteRayInformation for rank: " << rank << " numberOfReturnedSegments " << numberOfReturnedSegments << std::endl;
     for (PetscInt i = 0; i < numberOfReturnedSegments; ++i) {
@@ -564,7 +559,6 @@ void ablate::radiation::Radiation::ParticleStep(ablate::domain::SubDomain& subDo
 
     // Keep a list of particles to remove
     std::vector<PetscInt> particlesToDelete;
-
     for (PetscInt ipart = 0; ipart < npoints; ipart++) {
         /** Check that the particle is in a valid region */
         if (index[ipart] >= 0 && subDomain.InRegion(index[ipart])) {
@@ -579,14 +573,13 @@ void ablate::radiation::Radiation::ParticleStep(ablate::domain::SubDomain& subDo
                 identifier.nSegment++;
 
                 // make sure that this identifier does not already exist, sometimes particles duplicate
-//                if(){
-//                    // remove this particle
-//                    particlesToDelete.push_back(ipart);
+                //                if(){
+                //                    // remove this particle
+                //                    particlesToDelete.push_back(ipart);
 
-                      // skip the rest of this particle init
-//                    continue ;
-//                }
-
+                // skip the rest of this particle init
+                //                    continue ;
+                //                }
 
                 // Create an empty struct in the ray
                 raySegments.emplace_back();
@@ -598,14 +591,24 @@ void ablate::radiation::Radiation::ParticleStep(ablate::domain::SubDomain& subDo
                 DMSwarmGetField(radReturn, IdentifierField, nullptr, nullptr, (void**)&returnIdentifiers) >>
                     checkError;  //!< Get the fields from the radsolve swarm so the new point can be written to them
                 DMSwarmGetField(radReturn, DMSwarmField_rank, nullptr, nullptr, (void**)&returnRank) >> checkError;
+                PetscInt64* returnPid;
+                /** Get the fields associated with the particle swarm so that they can be modified */
+                DMSwarmGetField(radReturn, DMSwarmField_pid, nullptr, nullptr, (void**)&returnPid) >> ablate::checkError;
+                PetscInt64* pid;
+
+                DMSwarmGetField(radSearch, DMSwarmField_pid, nullptr, nullptr, (void**)&pid) >> ablate::checkError;
 
                 // these are only created as remote rays are identified, so we can remoteRayId for the rank
                 returnIdentifiers[identifier.remoteRayId] = identifier;
                 returnRank[identifier.remoteRayId] = identifier.originRank;
+                returnPid[identifier.remoteRayId] = pid[ipart];
+
+                DMSwarmRestoreField(radSearch, DMSwarmField_pid, nullptr, nullptr, (void**)&pid) >> ablate::checkError;
 
                 DMSwarmRestoreField(radReturn, IdentifierField, nullptr, nullptr, (void**)&returnIdentifiers) >>
                     checkError;  //!< Get the fields from the radsolve swarm so the new point can be written to them
                 DMSwarmRestoreField(radReturn, DMSwarmField_rank, nullptr, nullptr, (void**)&returnRank) >> checkError;
+                DMSwarmRestoreField(radReturn, DMSwarmField_pid, nullptr, nullptr, (void**)&returnPid) >> ablate::checkError;
             }
             // Exact the ray to reduce lookup
             auto& ray = raySegments[identifier.remoteRayId];
@@ -669,7 +672,7 @@ void ablate::radiation::Radiation::ParticleStep(ablate::domain::SubDomain& subDo
     DMSwarmRestoreField(radSearch, DMSwarmPICField_cellid, nullptr, nullptr, (void**)&index) >> checkError;
 
     // delete any duplicate particles
-    for(PetscInt p : particlesToDelete){
+    for (PetscInt p : particlesToDelete) {
         DMSwarmRemovePointAtIndex(radSearch, p) >> checkError;
     }
 }
