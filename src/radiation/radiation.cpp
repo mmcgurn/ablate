@@ -30,13 +30,13 @@ static void CheckForDuplicates(std::string info, DM dmSwarm){
     DMSwarmGetField(dmSwarm, DMSwarmField_pid, nullptr, nullptr, (void**)&pid) >> ablate::checkError;
 
     // Find the maximum particle id
-    PetscInt64 maxParticleId;
+    PetscInt64 maxParticleId = 0;
     for(PetscInt p =0;p < localSize; ++p){
         maxParticleId = PetscMax(maxParticleId, pid[p]);
     }
 
     MPI_Allreduce(MPI_IN_PLACE, &maxParticleId, 1, MPIU_INT64, MPI_MAX, PetscObjectComm((PetscObject) dmSwarm)) >> ablate::checkMpiError;
-
+    std::cout << "maxParticleId: " << maxParticleId << std::endl;
     std::vector<PetscInt64> count(maxParticleId, 0);
     for(PetscInt p =0;p < localSize; ++p){
         count[pid[p]]++;
