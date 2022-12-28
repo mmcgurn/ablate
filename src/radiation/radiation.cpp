@@ -350,6 +350,13 @@ void ablate::radiation::Radiation::Initialize(const solver::Range& cellRange, ab
         raySegmentsPerOriginRay[returnIdentifiers[p].originRayId]++;
     }
 
+
+    file << "returnIdentifiers: " << std::endl;
+    file << "particleId, originRank, originRayId, remoteRank, remoteRayId, nSegment" << std::endl;
+    for (PetscInt p = 0; p < numberOfReturnedSegments; ++p) {
+        file << p << ", " << returnIdentifiers[p].originRank << ", " <<returnIdentifiers[p].originRayId  << ", " <<returnIdentifiers[p].remoteRank <<  ", " <<returnIdentifiers[p].remoteRayId << ", " <<returnIdentifiers[p].nSegment << std::endl;
+    }
+
     file << "raySegmentsPerOriginRay: " << std::endl;
     for (PetscInt p = 0; p < numberOriginRays; ++p) {
         file << p << ": " << raySegmentsPerOriginRay[p] << std::endl;
