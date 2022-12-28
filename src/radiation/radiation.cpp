@@ -37,7 +37,7 @@ static void CheckForDuplicates(std::string info, DM dmSwarm){
 
     MPI_Allreduce(MPI_IN_PLACE, &maxParticleId, 1, MPIU_INT64, MPI_MAX, PetscObjectComm((PetscObject) dmSwarm)) >> ablate::checkMpiError;
     std::cout << "maxParticleId: " << maxParticleId << std::endl;
-    std::vector<PetscInt64> count(maxParticleId, 0);
+    std::vector<PetscInt64> count(maxParticleId+1, 0);
     for(PetscInt p =0;p < localSize; ++p){
         count[pid[p]]++;
     }
