@@ -2,12 +2,12 @@
 #define ABLATELIBRARY_FIELD_FUNCTION_DENSITY_EXTRA_VARIABLES_HPP
 
 #include <eos/eos.hpp>
-#include <mathFunctions/fieldFunction.hpp>
+#include "domain/fieldMathFunction.hpp"
 #include "compressibleFlowState.hpp"
 
 namespace ablate::finiteVolume::fieldFunctions {
 
-class DensityExtraVariables : public ablate::mathFunctions::FieldFunction {
+class DensityExtraVariables : public domain::FieldMathFunction {
    private:
     const std::shared_ptr<mathFunctions::MathFunction> eulerFunction;
     const std::vector<std::shared_ptr<mathFunctions::MathFunction>> evFunctions;

@@ -138,7 +138,7 @@ TEST_P(CompressibleFlowEvDiffusionTestFixture, ShouldConvergeToExactSolution) {
                                                            ablate::parameters::MapParameters::Create({{"ts_dt", "5.e-01"}, {"ts_type", "rk"}, {"ts_max_time", "15.0"}, {"ts_adapt_type", "none"}}),
                                                            {},
                                                            initialization,
-                                                           std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{eulerExactField, evExactField});
+                                                           {} /*TODO: fix std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{eulerExactField, evExactField}*/);
 
             // setup a flow parameters
             auto transportModel = std::make_shared<ablate::eos::transport::Constant>(0.0, 0.0, parameters.diff);

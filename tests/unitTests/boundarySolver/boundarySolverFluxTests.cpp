@@ -108,15 +108,18 @@ TEST_P(BoundarySolverFluxTestFixture, ShouldComputeCorrectGradientsOnBoundary) {
         // Initialize each of the fields
         auto subDomain = mesh->GetSubDomain(boundaryCellRegion);
         auto fieldFunctions = {
-            std::make_shared<mathFunctions::FieldFunction>("fieldA", ablate::mathFunctions::Create(GetParam().fieldAFunction)),
-            std::make_shared<mathFunctions::FieldFunction>("fieldB", ablate::mathFunctions::Create(GetParam().fieldBFunction)),
+            std::make_shared<domain::FieldMathFunction>("fieldA", ablate::mathFunctions::Create(GetParam().fieldAFunction)),
+            std::make_shared<domain::FieldMathFunction>("fieldB", ablate::mathFunctions::Create(GetParam().fieldBFunction)),
         };
+        for(auto& function : fieldFunctions){
+            function->ProjectField(globVec)
+        }
         mesh->ProjectFieldFunctions(fieldFunctions, globVec);
 
         auto auxVec = subDomain->GetAuxVector();
         auto auxFieldFunctions = {
-            std::make_shared<mathFunctions::FieldFunction>("auxA", ablate::mathFunctions::Create(GetParam().auxAFunction)),
-            std::make_shared<mathFunctions::FieldFunction>("auxB", ablate::mathFunctions::Create(GetParam().auxBFunction)),
+            std::make_shared<domain::FieldMathFunction>("auxA", ablate::mathFunctions::Create(GetParam().auxAFunction)),
+            std::make_shared<domain::FieldFunction>("auxB", ablate::mathFunctions::Create(GetParam().auxBFunction)),
         };
         subDomain->ProjectFieldFunctionsToLocalVector(auxFieldFunctions, auxVec);
 

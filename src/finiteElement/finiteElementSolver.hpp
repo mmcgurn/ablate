@@ -6,7 +6,7 @@
 #include <vector>
 #include "boundaryConditions/boundaryCondition.hpp"
 #include "eos/eos.hpp"
-#include "mathFunctions/fieldFunction.hpp"
+#include "domain/fieldMathFunction.hpp"
 #include "solver/solver.hpp"
 
 namespace ablate::finiteElement {
@@ -14,11 +14,11 @@ namespace ablate::finiteElement {
 class FiniteElementSolver : public solver::Solver, public solver::IFunction, public solver::BoundaryFunction {
    private:
     const std::vector<std::shared_ptr<boundaryConditions::BoundaryCondition>> boundaryConditions;
-    const std::vector<std::shared_ptr<mathFunctions::FieldFunction>> auxiliaryFieldsUpdaters;
+    const std::vector<std::shared_ptr<domain::FieldFunction>> auxiliaryFieldsUpdaters;
 
    public:
     FiniteElementSolver(std::string solverId, std::shared_ptr<domain::Region> region, std::shared_ptr<parameters::Parameters> options,
-                        std::vector<std::shared_ptr<boundaryConditions::BoundaryCondition>> boundaryConditions, std::vector<std::shared_ptr<mathFunctions::FieldFunction>> auxiliaryFields);
+                        std::vector<std::shared_ptr<boundaryConditions::BoundaryCondition>> boundaryConditions, std::vector<std::shared_ptr<domain::FieldFunction>> auxiliaryFields);
 
     /** SubDomain Register and Setup **/
     void Register(std::shared_ptr<ablate::domain::SubDomain> subDomain) override;

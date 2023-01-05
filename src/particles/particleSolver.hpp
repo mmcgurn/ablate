@@ -56,10 +56,10 @@ class ParticleSolver : public solver::Solver, public io::Serializable {
     std::shared_ptr<particles::initializers::Initializer> initializer = nullptr;
 
     //! initialize other particle variables
-    const std::vector<std::shared_ptr<mathFunctions::FieldFunction>> fieldInitialization;
+    const std::vector<std::shared_ptr<domain::FieldFunction>> fieldInitialization;
 
     //! store the exact solution if provided
-    const std::vector<std::shared_ptr<mathFunctions::FieldFunction>> exactSolutions;
+    const std::vector<std::shared_ptr<domain::ExactFunction>> exactSolutions;
 
    public:
     /**
@@ -74,7 +74,7 @@ class ParticleSolver : public solver::Solver, public io::Serializable {
      */
     ParticleSolver(std::string solverId, std::shared_ptr<domain::Region>, std::shared_ptr<parameters::Parameters> options, std::vector<FieldDescription> fields,
                    std::vector<std::shared_ptr<processes::Process>> processes, std::shared_ptr<initializers::Initializer> initializer,
-                   std::vector<std::shared_ptr<mathFunctions::FieldFunction>> fieldInitialization, std::vector<std::shared_ptr<mathFunctions::FieldFunction>> exactSolutions = {});
+                   std::vector<std::shared_ptr<domain::FieldFunction>> fieldInitialization, std::vector<std::shared_ptr<domain::ExactFunction>> exactSolutions = {});
 
     /**
      * shared pointer version of the constructor
@@ -88,7 +88,7 @@ class ParticleSolver : public solver::Solver, public io::Serializable {
      */
     ParticleSolver(std::string solverId, std::shared_ptr<domain::Region>, std::shared_ptr<parameters::Parameters> options, const std::vector<std::shared_ptr<FieldDescription>>& fields,
                    std::vector<std::shared_ptr<processes::Process>> processes, std::shared_ptr<initializers::Initializer> initializer,
-                   std::vector<std::shared_ptr<mathFunctions::FieldFunction>> fieldInitialization, std::vector<std::shared_ptr<mathFunctions::FieldFunction>> exactSolutions = {});
+                   std::vector<std::shared_ptr<domain::FieldFunction>> fieldInitialization, std::vector<std::shared_ptr<domain::ExactFunction>> exactSolutions = {});
 
     ~ParticleSolver() override;
 

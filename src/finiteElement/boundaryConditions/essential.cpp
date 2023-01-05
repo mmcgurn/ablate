@@ -10,10 +10,10 @@ PetscErrorCode ablate::finiteElement::boundaryConditions::Essential::BoundaryTim
     return boundary->boundaryFunction->GetTimeDerivative().GetPetscFunction()(dim, time, x, Nf, u, boundary->boundaryFunction->GetTimeDerivative().GetContext());
 }
 
-ablate::finiteElement::boundaryConditions::Essential::Essential(std::string boundaryName, int labelId, std::shared_ptr<mathFunctions::FieldFunction> boundaryFunctionIn, std::string labelNameIn)
+ablate::finiteElement::boundaryConditions::Essential::Essential(std::string boundaryName, int labelId, std::shared_ptr<domain::ExactFunction> boundaryFunctionIn, std::string labelNameIn)
     : Essential(boundaryName, std::vector<int>{labelId}, boundaryFunctionIn, labelNameIn) {}
 
-ablate::finiteElement::boundaryConditions::Essential::Essential(std::string boundaryName, std::vector<int> labelIdsIn, std::shared_ptr<mathFunctions::FieldFunction> boundaryFunctionIn,
+ablate::finiteElement::boundaryConditions::Essential::Essential(std::string boundaryName, std::vector<int> labelIdsIn, std::shared_ptr<domain::ExactFunction> boundaryFunctionIn,
                                                                 std::string labelNameIn)
     : BoundaryCondition(boundaryName, boundaryFunctionIn->GetName()),
       labelName(labelNameIn.empty() ? "marker" : labelNameIn),
@@ -47,5 +47,5 @@ void ablate::finiteElement::boundaryConditions::Essential::SetupBoundary(DM dm, 
 #include "registrar.hpp"
 REGISTER(ablate::finiteElement::boundaryConditions::BoundaryCondition, ablate::finiteElement::boundaryConditions::Essential, "essential (Dirichlet condition) for FE based problems",
          ARG(std::string, "boundaryName", "the name for this boundary condition"), ARG(std::vector<int>, "labelIds", "the ids on the mesh to apply the boundary condition"),
-         ARG(ablate::mathFunctions::FieldFunction, "boundaryValue", "the field function used to describe the boundary"),
+         ARG(ablate::domain::ExactFunction, "boundaryValue", "the field function used to describe the boundary"),
          OPT(std::string, "labelName", "the mesh label holding the boundary ids (default marker)"));

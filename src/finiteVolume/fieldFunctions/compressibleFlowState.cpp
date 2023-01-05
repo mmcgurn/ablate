@@ -6,7 +6,7 @@
 ablate::finiteVolume::fieldFunctions::CompressibleFlowState::CompressibleFlowState(std::shared_ptr<ablate::eos::EOS> eosIn, std::shared_ptr<mathFunctions::MathFunction> temperatureFunctionIn,
                                                                                    std::shared_ptr<mathFunctions::MathFunction> pressureFunctionIn,
                                                                                    std::shared_ptr<mathFunctions::MathFunction> velocityFunctionIn,
-                                                                                   std::shared_ptr<mathFunctions::FieldFunction> massFractionFunctionIn)
+                                                                                   std::shared_ptr<domain::FieldMathFunction> massFractionFunctionIn)
     : eos(eosIn), temperatureFunction(temperatureFunctionIn), pressureFunction(pressureFunctionIn), velocityFunction(velocityFunctionIn), massFractionFunction(massFractionFunctionIn) {
     // error checking
     // right now temperature and pressure are assumed, but this should be expended to handle any combination of primitive variables
@@ -50,7 +50,7 @@ std::shared_ptr<ablate::mathFunctions::MathFunction> ablate::finiteVolume::field
         // compute the mass fraction at this location
         std::vector<PetscReal> yi(eos->GetSpecies().size());
         if (massFractionFunction) {
-            PetscCall(massFractionFunction->GetSolutionField().GetPetscFunction()(dim, time, x, yi.size(), yi.data(), massFractionFunction->GetSolutionField().GetContext()));
+            PetscCall(massFractionFunction->GetFieldFunction()->GetPetscFunction()(dim, time, x, yi.size(), yi.data(), massFractionFunction->GetFieldFunction()->GetContext()));
         }
 
         eosFunction(temperature, pressure, dim, velocity, yi.data(), u);
@@ -65,4 +65,4 @@ REGISTER_DEFAULT(ablate::finiteVolume::fieldFunctions::CompressibleFlowState, ab
                  "a simple structure used to describe a compressible flow field using an EOS, T, pressure, vel, Yi", ARG(ablate::eos::EOS, "eos", "the eos used for the flow field"),
                  ARG(ablate::mathFunctions::MathFunction, "temperature", "the temperature field (K)"), ARG(ablate::mathFunctions::MathFunction, "pressure", "the pressure field (Pa)"),
                  ARG(ablate::mathFunctions::MathFunction, "velocity", "the velocity field (m/2)"),
-                 OPT(ablate::mathFunctions::FieldFunction, "massFractions", "a fieldFunctions used to describe all mass fractions"));
+                 OPT(ablate::domain::FieldMathFunction, "massFractions", "a fieldFunctions used to describe all mass fractions"));

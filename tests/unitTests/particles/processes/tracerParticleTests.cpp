@@ -301,12 +301,18 @@ TEST_P(TracerParticleMMSTestFixture, ParticleTracerFlowMMSTests) {
             auto temperatureExact =
                 std::make_shared<mathFunctions::FieldFunction>("temperature", ablate::mathFunctions::Create(testingParam.TExact), ablate::mathFunctions::Create(testingParam.TDerivativeExact));
 
+            // TODO: merge back together
+            auto velocityExact1 = std::make_shared<domain::ExactFunction>("velocity", ablate::mathFunctions::Create(testingParam.uExact), ablate::mathFunctions::Create(testingParam.uDerivativeExact));
+            auto pressureExact1 = std::make_shared<domain::ExactFunction>("pressure", ablate::mathFunctions::Create(testingParam.pExact), ablate::mathFunctions::Create(testingParam.pDerivativeExact));
+            auto temperatureExact1 =
+                std::make_shared<domain::ExactFunction>("temperature", ablate::mathFunctions::Create(testingParam.TExact), ablate::mathFunctions::Create(testingParam.TDerivativeExact));
+
             // create a time stepper
             auto timeStepper = ablate::solver::TimeStepper(mesh,
                                                            nullptr,
                                                            {},
                                                            std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{velocityExact, pressureExact, temperatureExact},
-                                                           std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{velocityExact, pressureExact, temperatureExact});
+                                                           std::vector<std::shared_ptr<domain::ExactFunction>>{velocityExact1, pressureExact1, temperatureExact1});
 
             timeStepper.Register(std::make_shared<ablate::finiteElement::IncompressibleFlowSolver>(
                 "testFlow",
@@ -314,14 +320,14 @@ TEST_P(TracerParticleMMSTestFixture, ParticleTracerFlowMMSTests) {
                 nullptr,
                 parameters,
                 /* boundary conditions */
-                std::vector<std::shared_ptr<boundaryConditions::BoundaryCondition>>{std::make_shared<boundaryConditions::Essential>("top wall velocity", 3, velocityExact),
-                                                                                    std::make_shared<boundaryConditions::Essential>("bottom wall velocity", 1, velocityExact),
-                                                                                    std::make_shared<boundaryConditions::Essential>("right wall velocity", 2, velocityExact),
-                                                                                    std::make_shared<boundaryConditions::Essential>("left wall velocity", 4, velocityExact),
-                                                                                    std::make_shared<boundaryConditions::Essential>("top wall temp", 3, temperatureExact),
-                                                                                    std::make_shared<boundaryConditions::Essential>("bottom wall temp", 1, temperatureExact),
-                                                                                    std::make_shared<boundaryConditions::Essential>("right wall temp", 2, temperatureExact),
-                                                                                    std::make_shared<boundaryConditions::Essential>("left wall temp", 4, temperatureExact)},
+                std::vector<std::shared_ptr<boundaryConditions::BoundaryCondition>>{std::make_shared<boundaryConditions::Essential>("top wall velocity", 3, velocityExact1),
+                                                                                    std::make_shared<boundaryConditions::Essential>("bottom wall velocity", 1, velocityExact1),
+                                                                                    std::make_shared<boundaryConditions::Essential>("right wall velocity", 2, velocityExact1),
+                                                                                    std::make_shared<boundaryConditions::Essential>("left wall velocity", 4, velocityExact1),
+                                                                                    std::make_shared<boundaryConditions::Essential>("top wall temp", 3, temperatureExact1),
+                                                                                    std::make_shared<boundaryConditions::Essential>("bottom wall temp", 1, temperatureExact1),
+                                                                                    std::make_shared<boundaryConditions::Essential>("right wall temp", 2, temperatureExact1),
+                                                                                    std::make_shared<boundaryConditions::Essential>("left wall temp", 4, temperatureExact1)},
                 /* aux updates*/
                 std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{}));
 

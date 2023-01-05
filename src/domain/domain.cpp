@@ -140,8 +140,8 @@ std::shared_ptr<ablate::domain::SubDomain> ablate::domain::Domain::GetSubDomain(
     }
 }
 
-void ablate::domain::Domain::InitializeSubDomains(const std::vector<std::shared_ptr<solver::Solver>>& solvers, const std::vector<std::shared_ptr<mathFunctions::FieldFunction>>& initializations,
-                                                  const std::vector<std::shared_ptr<mathFunctions::FieldFunction>>& exactSolutions) {
+void ablate::domain::Domain::InitializeSubDomains(const std::vector<std::shared_ptr<solver::Solver>>& solvers, const std::vector<std::shared_ptr<domain::FieldFunction>>& initializations,
+                                                  const std::vector<std::shared_ptr<domain::ExactFunction>>& exactSolutions) {
     // determine the number of fields
     for (auto& solver : solvers) {
         solver->Register(GetSubDomain(solver->GetRegion()));
@@ -166,7 +166,9 @@ void ablate::domain::Domain::InitializeSubDomains(const std::vector<std::shared_
     }
 
     // Set the initial conditions for each field specified
-    ProjectFieldFunctions(initializations, solGlobalField);
+    for(auto& init : initializations){
+        init->ProjectField(solGlobalField, 0.0);
+    }
 
     // do a sanity check to make sure that all points were initialized
     if (!initializations.empty() && CheckFieldValues()) {
@@ -192,60 +194,60 @@ std::vector<std::weak_ptr<ablate::io::Serializable>> ablate::domain::Domain::Get
     }
     return serializables;
 }
-
-void ablate::domain::Domain::ProjectFieldFunctions(const std::vector<std::shared_ptr<mathFunctions::FieldFunction>>& fieldFunctions, Vec globVec, PetscReal time) {
-    PetscInt numberFields;
-    DMGetNumFields(dm, &numberFields) >> utilities::PetscUtilities::checkError;
-
-    // get a local vector for the work
-    Vec locVec;
-    DMGetLocalVector(dm, &locVec) >> utilities::PetscUtilities::checkError;
-    DMGlobalToLocal(dm, globVec, INSERT_VALUES, locVec) >> utilities::PetscUtilities::checkError;
-
-    for (auto& fieldFunction : fieldFunctions) {
-        // Size up the field projects
-        std::vector<mathFunctions::PetscFunction> fieldFunctionsPts(numberFields, nullptr);
-        std::vector<void*> fieldContexts(numberFields, nullptr);
-
-        auto fieldId = GetField(fieldFunction->GetName());
-        fieldContexts[fieldId.id] = fieldFunction->GetSolutionField().GetContext();
-        fieldFunctionsPts[fieldId.id] = fieldFunction->GetSolutionField().GetPetscFunction();
-
-        // Determine where to apply this field
-        DMLabel fieldLabel = nullptr;
-        PetscInt fieldValue = 0;
-        if (const auto& region = fieldFunction->GetRegion()) {
-            fieldValue = region->GetValue();
-            DMGetLabel(dm, region->GetName().c_str(), &fieldLabel) >> utilities::PetscUtilities::checkError;
-        } else {
-            PetscObject fieldTemp;
-            DMGetField(dm, fieldId.id, &fieldLabel, &fieldTemp) >> utilities::PetscUtilities::checkError;
-            if (fieldLabel) {
-                fieldValue = 1;  // this is temporary until petsc allows fields to be defined with values beside 1
-            }
-        }
-
-        // Note the global DMProjectFunctionLabel can't be used because it overwrites unwritten values.
-        // Project this field
-        if (fieldLabel) {
-            // make sure that some of this field exists here
-            IS regionIS;
-            DMLabelGetStratumIS(fieldLabel, fieldValue, &regionIS) >> utilities::PetscUtilities::checkError;
-
-            if (regionIS) {
-                DMProjectFunctionLabelLocal(dm, time, fieldLabel, 1, &fieldValue, -1, nullptr, fieldFunctionsPts.data(), fieldContexts.data(), INSERT_VALUES, locVec) >>
-                    utilities::PetscUtilities::checkError;
-                ISDestroy(&regionIS) >> utilities::PetscUtilities::checkError;
-            }
-        } else {
-            DMProjectFunctionLocal(dm, time, fieldFunctionsPts.data(), fieldContexts.data(), INSERT_VALUES, locVec) >> utilities::PetscUtilities::checkError;
-        }
-    }
-
-    // push the results back to the global vector
-    DMLocalToGlobal(dm, locVec, INSERT_VALUES, globVec) >> utilities::PetscUtilities::checkError;
-    DMRestoreLocalVector(dm, &locVec) >> utilities::PetscUtilities::checkError;
-}
+//
+//void ablate::domain::Domain::ProjectFieldFunctions(const std::vector<std::shared_ptr<mathFunctions::FieldFunction>>& fieldFunctions, Vec globVec, PetscReal time) {
+//    PetscInt numberFields;
+//    DMGetNumFields(dm, &numberFields) >> utilities::PetscUtilities::checkError;
+//
+//    // get a local vector for the work
+//    Vec locVec;
+//    DMGetLocalVector(dm, &locVec) >> utilities::PetscUtilities::checkError;
+//    DMGlobalToLocal(dm, globVec, INSERT_VALUES, locVec) >> utilities::PetscUtilities::checkError;
+//
+//    for (auto& fieldFunction : fieldFunctions) {
+//        // Size up the field projects
+//        std::vector<mathFunctions::PetscFunction> fieldFunctionsPts(numberFields, nullptr);
+//        std::vector<void*> fieldContexts(numberFields, nullptr);
+//
+//        auto fieldId = GetField(fieldFunction->GetName());
+//        fieldContexts[fieldId.id] = fieldFunction->GetSolutionField().GetContext();
+//        fieldFunctionsPts[fieldId.id] = fieldFunction->GetSolutionField().GetPetscFunction();
+//
+//        // Determine where to apply this field
+//        DMLabel fieldLabel = nullptr;
+//        PetscInt fieldValue = 0;
+//        if (const auto& region = fieldFunction->GetRegion()) {
+//            fieldValue = region->GetValue();
+//            DMGetLabel(dm, region->GetName().c_str(), &fieldLabel) >> utilities::PetscUtilities::checkError;
+//        } else {
+//            PetscObject fieldTemp;
+//            DMGetField(dm, fieldId.id, &fieldLabel, &fieldTemp) >> utilities::PetscUtilities::checkError;
+//            if (fieldLabel) {
+//                fieldValue = 1;  // this is temporary until petsc allows fields to be defined with values beside 1
+//            }
+//        }
+//
+//        // Note the global DMProjectFunctionLabel can't be used because it overwrites unwritten values.
+//        // Project this field
+//        if (fieldLabel) {
+//            // make sure that some of this field exists here
+//            IS regionIS;
+//            DMLabelGetStratumIS(fieldLabel, fieldValue, &regionIS) >> utilities::PetscUtilities::checkError;
+//
+//            if (regionIS) {
+//                DMProjectFunctionLabelLocal(dm, time, fieldLabel, 1, &fieldValue, -1, nullptr, fieldFunctionsPts.data(), fieldContexts.data(), INSERT_VALUES, locVec) >>
+//                    utilities::PetscUtilities::checkError;
+//                ISDestroy(&regionIS) >> utilities::PetscUtilities::checkError;
+//            }
+//        } else {
+//            DMProjectFunctionLocal(dm, time, fieldFunctionsPts.data(), fieldContexts.data(), INSERT_VALUES, locVec) >> utilities::PetscUtilities::checkError;
+//        }
+//    }
+//
+//    // push the results back to the global vector
+//    DMLocalToGlobal(dm, locVec, INSERT_VALUES, globVec) >> utilities::PetscUtilities::checkError;
+//    DMRestoreLocalVector(dm, &locVec) >> utilities::PetscUtilities::checkError;
+//}
 
 bool ablate::domain::Domain::CheckFieldValues(Vec globSourceVector) {
     // create a set of points that have failed

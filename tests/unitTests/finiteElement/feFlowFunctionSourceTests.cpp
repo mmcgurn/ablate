@@ -558,12 +558,19 @@ TEST_P(FEFlowMMSTestFixture, ShouldConvergeToExactSolution) {
             auto pressureExact = std::make_shared<mathFunctions::FieldFunction>("pressure", mathFunctions::Create(testingParam.pExact));
             auto temperatureExact = std::make_shared<mathFunctions::FieldFunction>("temperature", mathFunctions::Create(testingParam.TExact), mathFunctions::Create(testingParam.T_tExact));
 
+            // TODO: merge back together
+            auto velocityExact1 = std::make_shared<domain::ExactFunction>("velocity", mathFunctions::Create(testingParam.uExact), mathFunctions::Create(testingParam.u_tExact));
+            auto pressureExact1 = std::make_shared<domain::ExactFunction>("pressure", mathFunctions::Create(testingParam.pExact));
+            auto temperatureExact1 = std::make_shared<domain::ExactFunction>("temperature", mathFunctions::Create(testingParam.TExact), mathFunctions::Create(testingParam.T_tExact));
+
+
+
             // create a time stepper
             auto timeStepper = ablate::solver::TimeStepper(mesh,
                                                            nullptr,
                                                            {},
                                                            std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{velocityExact, pressureExact, temperatureExact},
-                                                           std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{velocityExact, pressureExact, temperatureExact});
+                                                           std::vector<std::shared_ptr<domain::ExactFunction>>{velocityExact1, pressureExact1, temperatureExact1});
 
             // Create the flow object
             std::shared_ptr<ablate::finiteElement::FiniteElementSolver> flowObject =
@@ -572,8 +579,8 @@ TEST_P(FEFlowMMSTestFixture, ShouldConvergeToExactSolution) {
                                           parameters,
                                           /* boundary conditions */
                                           std::vector<std::shared_ptr<boundaryConditions::BoundaryCondition>>{
-                                              std::make_shared<boundaryConditions::Essential>("velocity wall", std::vector<int>{3, 1, 2, 4}, velocityExact),
-                                              std::make_shared<boundaryConditions::Essential>("temp wall", std::vector<int>{3, 1, 2, 4}, temperatureExact),
+                                              std::make_shared<boundaryConditions::Essential>("velocity wall", std::vector<int>{3, 1, 2, 4}, velocityExact1),
+                                              std::make_shared<boundaryConditions::Essential>("temp wall", std::vector<int>{3, 1, 2, 4}, temperatureExact1),
                                           },
                                           /* aux field updates */
                                           std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{});

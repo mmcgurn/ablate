@@ -121,12 +121,20 @@ TEST_P(FEFlowDynamicSourceMMSTestFixture, ShouldConvergeToExactSolution) {
             auto temperatureExact = std::make_shared<mathFunctions::FieldFunction>(
                 "temperature", std::make_shared<mathFunctions::SimpleFormula>(testingParam.TExact), std::make_shared<mathFunctions::SimpleFormula>(testingParam.TDerivativeExact));
 
+            // TODO: merge back together
+            auto velocityExact1 = std::make_shared<domain::ExactFunction>(
+                "velocity", std::make_shared<mathFunctions::SimpleFormula>(testingParam.uExact), std::make_shared<mathFunctions::SimpleFormula>(testingParam.uDerivativeExact));
+            auto pressureExact1 = std::make_shared<domain::ExactFunction>(
+                "pressure", std::make_shared<mathFunctions::SimpleFormula>(testingParam.pExact), std::make_shared<mathFunctions::SimpleFormula>(testingParam.pDerivativeExact));
+            auto temperatureExact1 = std::make_shared<domain::ExactFunction>(
+                "temperature", std::make_shared<mathFunctions::SimpleFormula>(testingParam.TExact), std::make_shared<mathFunctions::SimpleFormula>(testingParam.TDerivativeExact));
+
             // create a time stepper
             auto timeStepper = ablate::solver::TimeStepper(mesh,
                                                            nullptr,
                                                            {},
                                                            std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{velocityExact, pressureExact, temperatureExact},
-                                                           std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{velocityExact, pressureExact, temperatureExact});
+                                                           std::vector<std::shared_ptr<domain::ExactFunction>>{velocityExact1, pressureExact1, temperatureExact1});
 
             // Create the flow object
             std::shared_ptr<ablate::finiteElement::FiniteElementSolver> flowObject =
@@ -134,14 +142,14 @@ TEST_P(FEFlowDynamicSourceMMSTestFixture, ShouldConvergeToExactSolution) {
                                           nullptr,
                                           parameters,
                                           /* boundary conditions */
-                                          std::vector<std::shared_ptr<boundaryConditions::BoundaryCondition>>{std::make_shared<boundaryConditions::Essential>("top wall velocity", 3, velocityExact),
-                                                                                                              std::make_shared<boundaryConditions::Essential>("bottom wall velocity", 1, velocityExact),
-                                                                                                              std::make_shared<boundaryConditions::Essential>("right wall velocity", 2, velocityExact),
-                                                                                                              std::make_shared<boundaryConditions::Essential>("left wall velocity", 4, velocityExact),
-                                                                                                              std::make_shared<boundaryConditions::Essential>("top wall temp", 3, temperatureExact),
-                                                                                                              std::make_shared<boundaryConditions::Essential>("bottom wall temp", 1, temperatureExact),
-                                                                                                              std::make_shared<boundaryConditions::Essential>("right wall temp", 2, temperatureExact),
-                                                                                                              std::make_shared<boundaryConditions::Essential>("left wall temp", 4, temperatureExact)},
+                                          std::vector<std::shared_ptr<boundaryConditions::BoundaryCondition>>{std::make_shared<boundaryConditions::Essential>("top wall velocity", 3, velocityExact1),
+                                                                                                              std::make_shared<boundaryConditions::Essential>("bottom wall velocity", 1, velocityExact1),
+                                                                                                              std::make_shared<boundaryConditions::Essential>("right wall velocity", 2, velocityExact1),
+                                                                                                              std::make_shared<boundaryConditions::Essential>("left wall velocity", 4, velocityExact1),
+                                                                                                              std::make_shared<boundaryConditions::Essential>("top wall temp", 3, temperatureExact1),
+                                                                                                              std::make_shared<boundaryConditions::Essential>("bottom wall temp", 1, temperatureExact1),
+                                                                                                              std::make_shared<boundaryConditions::Essential>("right wall temp", 2, temperatureExact1),
+                                                                                                              std::make_shared<boundaryConditions::Essential>("left wall temp", 4, temperatureExact1)},
                                           /* aux field updates */
                                           std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{
                                               std::make_shared<mathFunctions::FieldFunction>("momentum_source", std::make_shared<mathFunctions::SimpleFormula>(testingParam.vSource)),

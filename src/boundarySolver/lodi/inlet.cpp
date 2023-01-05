@@ -18,7 +18,7 @@ void ablate::boundarySolver::lodi::Inlet::Setup(ablate::boundarySolver::Boundary
     if (prescribedVelocity) {
         // define an update field function
         auto updateFieldFunction =
-            std::make_shared<mathFunctions::FieldFunction>(finiteVolume::CompressibleFlowFields::EULER_FIELD, ablate::mathFunctions::Create(UpdateVelocityFunction, prescribedVelocity.get()));
+            std::make_shared<domain::FieldMathFunction>(finiteVolume::CompressibleFlowFields::EULER_FIELD, ablate::mathFunctions::Create(UpdateVelocityFunction, prescribedVelocity.get()));
 
         bSolver.RegisterPreStep([&bSolver, updateFieldFunction](auto ts, auto &solver) {
             // Get the current time

@@ -24,7 +24,7 @@ class Sublimation : public BoundaryProcess {
     PetscReal currentTime = 0.0;
 
     //!< Store the mass fractions if provided
-    const std::shared_ptr<ablate::mathFunctions::FieldFunction> massFractions;
+    const std::shared_ptr<ablate::domain::FieldMathFunction> massFractions;
     const mathFunctions::PetscFunction massFractionsFunction;
     void *massFractionsContext;
     PetscInt numberSpecies = 0;
@@ -86,7 +86,7 @@ class Sublimation : public BoundaryProcess {
 
    public:
     explicit Sublimation(PetscReal latentHeatOfFusion, std::shared_ptr<ablate::eos::transport::TransportModel> transportModel, std::shared_ptr<ablate::eos::EOS> eos,
-                         const std::shared_ptr<ablate::mathFunctions::FieldFunction> & = {}, std::shared_ptr<mathFunctions::MathFunction> additionalHeatFlux = {},
+                         const std::shared_ptr<ablate::domain::FieldMathFunction> & = {}, std::shared_ptr<mathFunctions::MathFunction> additionalHeatFlux = {},
                          std::shared_ptr<finiteVolume::processes::PressureGradientScaling> pressureGradientScaling = {}, bool diffusionFlame = false,
                          std::shared_ptr<ablate::radiation::SurfaceRadiation> radiationIn = {}, const std::shared_ptr<io::interval::Interval> &intervalIn = {}, const double emissivityIn = 1);
 

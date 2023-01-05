@@ -8,7 +8,7 @@
 using fp = ablate::finiteVolume::CompressibleFlowFields;
 
 ablate::boundarySolver::physics::Sublimation::Sublimation(PetscReal latentHeatOfFusion, std::shared_ptr<ablate::eos::transport::TransportModel> transportModel, std::shared_ptr<ablate::eos::EOS> eos,
-                                                          const std::shared_ptr<ablate::mathFunctions::FieldFunction> &massFractions, std::shared_ptr<mathFunctions::MathFunction> additionalHeatFlux,
+                                                          const std::shared_ptr<ablate::domain::FieldMathFunction> &massFractions, std::shared_ptr<mathFunctions::MathFunction> additionalHeatFlux,
                                                           std::shared_ptr<finiteVolume::processes::PressureGradientScaling> pressureGradientScaling, bool diffusionFlame,
                                                           std::shared_ptr<ablate::radiation::SurfaceRadiation> radiationIn, const std::shared_ptr<io::interval::Interval> &intervalIn,
                                                           const double emissivityIn)
@@ -390,7 +390,7 @@ REGISTER(ablate::boundarySolver::BoundaryProcess, ablate::boundarySolver::physic
          ARG(double, "latentHeatOfFusion", "the latent heat of fusion [J/kg]"),
          OPT(ablate::eos::transport::TransportModel, "transportModel", "the effective conductivity model to compute heat flux to the surface [W/(m⋅K)]"),
          ARG(ablate::eos::EOS, "eos", "the eos used to compute temperature on the boundary"),
-         OPT(ablate::mathFunctions::FieldFunction, "massFractions", "the species to deposit the off gas mass to (required if solving species)"),
+         OPT(ablate::domain::FieldMathFunction, "massFractions", "the species to deposit the off gas mass to (required if solving species)"),
          OPT(ablate::mathFunctions::MathFunction, "additionalHeatFlux", "additional normal heat flux into the solid function"),
          OPT(ablate::finiteVolume::processes::PressureGradientScaling, "pgs", "Pressure gradient scaling is used to scale the acoustic propagation speed and increase time step for low speed flows"),
          OPT(bool, "diffusionFlame", "disables contribution to the momentum equation. Should be true when advection is not solved. (Default is false)"),

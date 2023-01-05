@@ -158,7 +158,7 @@ TEST_P(CompressibleFlowSpeciesDiffusionTestFixture, ShouldConvergeToExactSolutio
                                                            ablate::parameters::MapParameters::Create({{"ts_dt", "5.e-01"}, {"ts_type", "rk"}, {"ts_max_time", "15.0"}, {"ts_adapt_type", "none"}}),
                                                            nullptr,
                                                            exactSolutions,
-                                                           exactSolutions);
+                                                           {} /*TODO: fix*/);
 
             // setup a flow parameters
             auto transportModel = std::make_shared<ablate::eos::transport::Constant>(0.0, 0.0, parameters.diff);

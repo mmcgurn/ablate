@@ -191,11 +191,12 @@ TEST_P(CompressibleFlowEulerDiffusionTestFixture, ShouldConvergeToExactSolution)
                                                                     std::vector<std::shared_ptr<ablate::domain::modifiers::Modifier>>{std::make_shared<domain::modifiers::DistributeWithGhostCells>(),
                                                                                                                                       std::make_shared<domain::modifiers::GhostBoundaryCells>()});
 
-            auto exactSolution = std::make_shared<mathFunctions::FieldFunction>("euler", mathFunctions::Create(EulerExact, &parameters));
 
             // create a time stepper
             auto timeStepper = ablate::solver::TimeStepper(
-                mesh, nullptr, {}, std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{exactSolution}, std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{exactSolution});
+                mesh, nullptr, {},
+                std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{std::make_shared<mathFunctions::FieldFunction>("euler", mathFunctions::Create(EulerExact, &parameters))},
+                std::vector<std::shared_ptr<domain::ExactFunction>>{std::make_shared<domain::ExactFunction>("euler", mathFunctions::Create(EulerExact, &parameters))});
 
             // Setup the flow data
             auto flowParameters = std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{{"cfl", "0.5"}});

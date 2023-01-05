@@ -3,8 +3,8 @@
 #include <mathFunctions/functionPointer.hpp>
 #include "utilities/vectorUtilities.hpp"
 
-ablate::finiteVolume::fieldFunctions::MassFractions::MassFractions(std::shared_ptr<ablate::eos::EOS> eos, std::vector<std::shared_ptr<mathFunctions::FieldFunction>> massFractionFieldFunctionsIn)
-    : ablate::mathFunctions::FieldFunction("yi", std::make_shared<ablate::mathFunctions::FunctionPointer>(ablate::finiteVolume::fieldFunctions::MassFractions::ComputeYiFunction, this)),
+ablate::finiteVolume::fieldFunctions::MassFractions::MassFractions(std::shared_ptr<ablate::eos::EOS> eos, std::vector<std::shared_ptr<domain::FieldMathFunction>> massFractionFieldFunctionsIn)
+    : ablate::domain::FieldMathFunction("yi", std::make_shared<ablate::mathFunctions::FunctionPointer>(ablate::finiteVolume::fieldFunctions::MassFractions::ComputeYiFunction, this)),
       massFractionFieldFunctions(massFractionFieldFunctionsIn) {
     const auto &species = eos->GetSpecies();
 
@@ -45,5 +45,5 @@ PetscErrorCode ablate::finiteVolume::fieldFunctions::MassFractions::ComputeYiFun
 }
 
 #include "registrar.hpp"
-REGISTER(ablate::mathFunctions::FieldFunction, ablate::finiteVolume::fieldFunctions::MassFractions, "initializes the yi field function variables based upon a the list of functions and eos",
-         ARG(ablate::eos::EOS, "eos", "The eos with the list of species"), ARG(std::vector<ablate::mathFunctions::FieldFunction>, "values", "The list of mass fraction functions"));
+REGISTER(ablate::domain::FieldMathFunction, ablate::finiteVolume::fieldFunctions::MassFractions, "initializes the yi field function variables based upon a the list of functions and eos",
+         ARG(ablate::eos::EOS, "eos", "The eos with the list of species"), ARG(std::vector<ablate::domain::FieldMathFunction>, "values", "The list of mass fraction functions"));

@@ -3,7 +3,6 @@ target_sources(ablateLibrary
         simpleFormula.cpp
         functionWrapper.cpp
         functionPointer.cpp
-        fieldFunction.cpp
         constantValue.cpp
         parsedSeries.cpp
         linearTable.cpp
@@ -16,7 +15,6 @@ target_sources(ablateLibrary
         functionPointer.hpp
         mathFunction.hpp
         functionFactory.hpp
-        fieldFunction.hpp
         constantValue.hpp
         parsedSeries.hpp
         linearTable.hpp

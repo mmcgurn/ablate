@@ -575,12 +575,12 @@ TEST_P(CompressibleFlowMmsTestFixture, ShouldComputeCorrectFlux) {
                                                                                                                                       std::make_shared<domain::modifiers::GhostBoundaryCells>()});
 
             // create a time stepper
-            auto exactSolution = std::make_shared<mathFunctions::FieldFunction>("euler", mathFunctions::Create(EulerExact, &constants));
-            auto timeStepper = ablate::solver::TimeStepper(mesh,
-                                                           ablate::parameters::MapParameters::Create({{"ts_max_steps", "1"}}),
-                                                           {},
-                                                           std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{exactSolution},
-                                                           std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{exactSolution});
+            auto timeStepper = ablate::solver::TimeStepper(
+                mesh,
+                ablate::parameters::MapParameters::Create({{"ts_max_steps", "1"}}),
+                {},
+                std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{std::make_shared<mathFunctions::FieldFunction>("euler", mathFunctions::Create(EulerExact, &constants))},
+                std::vector<std::shared_ptr<domain::ExactFunction>>{std::make_shared<domain::ExactFunction>("euler", mathFunctions::Create(EulerExact, &constants))});
 
             auto parameters = std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{{"cfl", "0.5"}});
 

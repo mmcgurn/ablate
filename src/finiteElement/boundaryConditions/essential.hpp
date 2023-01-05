@@ -1,10 +1,10 @@
 #ifndef ABLATELIBRARY_ESSENTIAL_HPP
 #define ABLATELIBRARY_ESSENTIAL_HPP
 
-#include <mathFunctions/fieldFunction.hpp>
 #include <memory>
 #include <string>
 #include "boundaryCondition.hpp"
+#include "domain/exactFunction.hpp"
 #include "mathFunctions/mathFunction.hpp"
 
 namespace ablate::finiteElement::boundaryConditions {
@@ -13,7 +13,7 @@ class Essential : public BoundaryCondition {
    private:
     const std::string labelName;
     const std::vector<PetscInt> labelIds;
-    const std::shared_ptr<mathFunctions::FieldFunction> boundaryFunction;
+    const std::shared_ptr<domain::ExactFunction> boundaryFunction;
 
    private:
     static PetscErrorCode BoundaryValueFunction(PetscInt dim, PetscReal time, const PetscReal x[], PetscInt Nf, PetscScalar* u, void* ctx);
@@ -26,11 +26,11 @@ class Essential : public BoundaryCondition {
     void* GetContext();
 
    public:
-    Essential(std::string boundaryName, int labelId, std::shared_ptr<mathFunctions::FieldFunction> boundaryFunction, std::string labelName = {});
+    Essential(std::string boundaryName, int labelId, std::shared_ptr<domain::ExactFunction> boundaryFunction, std::string labelName = {});
 
-    Essential(std::string boundaryName, std::vector<int> labelId, std::shared_ptr<mathFunctions::FieldFunction> boundaryFunction, std::string labelName = {});
+    Essential(std::string boundaryName, std::vector<int> labelId, std::shared_ptr<domain::ExactFunction> boundaryFunction, std::string labelName = {});
 
-    const std::string& GetLabelName() const { return labelName; }
+    [[nodiscard]] const std::string& GetLabelName() const { return labelName; }
 
     void SetupBoundary(DM dm, PetscDS problem, PetscInt field) override;
 };

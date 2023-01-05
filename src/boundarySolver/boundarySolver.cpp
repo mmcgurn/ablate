@@ -588,7 +588,7 @@ PetscErrorCode ablate::boundarySolver::BoundarySolver::ComputeRHSFunction(PetscR
 
     PetscFunctionReturn(0);
 }
-void ablate::boundarySolver::BoundarySolver::InsertFieldFunctions(const std::vector<std::shared_ptr<mathFunctions::FieldFunction>>& fieldFunctions, PetscReal time) {
+void ablate::boundarySolver::BoundarySolver::InsertFieldFunctions(const std::vector<std::shared_ptr<domain::FieldMathFunction>>& fieldFunctions, PetscReal time) {
     for (const auto& fieldFunction : fieldFunctions) {
         // Get the field
         const auto& field = subDomain->GetField(fieldFunction->GetName());

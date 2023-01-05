@@ -4,7 +4,7 @@
 
 ablate::finiteElement::LowMachFlowSolver::LowMachFlowSolver(std::string solverId, std::shared_ptr<domain::Region> region, std::shared_ptr<parameters::Parameters> options,
                                                             std::shared_ptr<parameters::Parameters> parameters, std::vector<std::shared_ptr<boundaryConditions::BoundaryCondition>> boundaryConditions,
-                                                            std::vector<std::shared_ptr<mathFunctions::FieldFunction>> auxiliaryFields)
+                                                            std::vector<std::shared_ptr<domain::FieldFunction>> auxiliaryFields)
     : FiniteElementSolver(solverId, region, options, boundaryConditions, auxiliaryFields), parameters(parameters) {}
 
 void ablate::finiteElement::LowMachFlowSolver::Setup() {
@@ -133,4 +133,4 @@ REGISTER(ablate::solver::Solver, ablate::finiteElement::LowMachFlowSolver, "inco
          OPT(ablate::domain::Region, "region", "the region to apply this solver.  Default is entire domain"),
          OPT(ablate::parameters::Parameters, "options", "options for the flow passed directly to PETSc"), ARG(ablate::parameters::Parameters, "parameters", "the flow field parameters"),
          ARG(std::vector<ablate::finiteElement::boundaryConditions::BoundaryCondition>, "boundaryConditions", "the boundary conditions for the flow field"),
-         ARG(std::vector<ablate::mathFunctions::FieldFunction>, "auxFields", "enables and sets the update functions for the auxFields"));
+         ARG(std::vector<ablate::domain::FieldFunction>, "auxFields", "enables and sets the update functions for the auxFields"));

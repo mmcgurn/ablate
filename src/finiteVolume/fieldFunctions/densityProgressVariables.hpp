@@ -2,12 +2,12 @@
 #define ABLATELIBRARY_FIELD_FUNCTION_DENSITY_PROGRESSVARIABLE_HPP
 
 #include <eos/eos.hpp>
-#include <mathFunctions/fieldFunction.hpp>
 #include "compressibleFlowState.hpp"
+#include "domain/fieldMathFunction.hpp"
 
 namespace ablate::finiteVolume::fieldFunctions {
 
-class DensityProgressVariables : public ablate::mathFunctions::FieldFunction {
+class DensityProgressVariables : public ablate::domain::FieldMathFunction {
    public:
     explicit DensityProgressVariables(std::shared_ptr<ablate::finiteVolume::fieldFunctions::CompressibleFlowState> flowState, std::shared_ptr<ablate::domain::Region> region = {});
 };

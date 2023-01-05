@@ -9,9 +9,10 @@
 #include <vector>
 #include "domain/fieldDescriptor.hpp"
 #include "domain/modifiers/modifier.hpp"
+#include "exactFunction.hpp"
 #include "fieldDescription.hpp"
 #include "io/serializable.hpp"
-#include "mathFunctions/fieldFunction.hpp"
+#include "domain/fieldFunction.hpp"
 #include "region.hpp"
 #include "utilities/loggable.hpp"
 
@@ -84,15 +85,15 @@ class Domain : private utilities::Loggable<Domain> {
      * @param solvers
      * @param initializations
      */
-    void InitializeSubDomains(const std::vector<std::shared_ptr<solver::Solver>>& solvers = {}, const std::vector<std::shared_ptr<mathFunctions::FieldFunction>>& initializations = {},
-                              const std::vector<std::shared_ptr<mathFunctions::FieldFunction>>& = {});
+    void InitializeSubDomains(const std::vector<std::shared_ptr<solver::Solver>>& solvers = {}, const std::vector<std::shared_ptr<domain::FieldFunction>>& initializations = {},
+                              const std::vector<std::shared_ptr<domain::ExactFunction>>& = {});
 
     /**
      * project the list of field function into the provided global vector
      * @param fieldFunctions
      * @param globVec
      */
-    void ProjectFieldFunctions(const std::vector<std::shared_ptr<mathFunctions::FieldFunction>>& fieldFunctions, Vec globVec, PetscReal time = 0.0);
+//    void ProjectFieldFunctions(const std::vector<std::shared_ptr<mathFunctions::FieldFunction>>& fieldFunctions, Vec globVec, PetscReal time = 0.0);
 
     std::shared_ptr<SubDomain> GetSubDomain(const std::shared_ptr<Region>& name);
 

@@ -78,12 +78,16 @@ TEST_P(CompressibleFlowAdvectionFixture, ShouldConvergeToExactSolution) {
             auto exactEulerSolution = std::make_shared<mathFunctions::FieldFunction>("euler", GetParam().eulerExact);
             auto yiExactSolution = std::make_shared<mathFunctions::FieldFunction>("densityYi", GetParam().densityYiExact);
 
+            // TODO: merge back together
+            auto exactEulerSolution1 = std::make_shared<domain::ExactFunction>("euler", GetParam().eulerExact);
+            auto yiExactSolution1 = std::make_shared<domain::ExactFunction>("densityYi", GetParam().densityYiExact);
+
             // create a time stepper
             auto timeStepper = ablate::solver::TimeStepper(mesh,
                                                            nullptr,
                                                            {},
                                                            std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{exactEulerSolution, yiExactSolution},
-                                                           std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{exactEulerSolution, yiExactSolution});
+                                                           std::vector<std::shared_ptr<domain::ExactFunction>>{exactEulerSolution1, yiExactSolution1});
 
             // setup a flow parameters
             auto parameters = std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{{"cfl", "0.25"}});

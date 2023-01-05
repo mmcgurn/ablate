@@ -218,12 +218,21 @@ TEST_P(InertialParticleExactTestFixture, ParticleShouldMoveAsExpected) {
             auto temperatureExact = std::make_shared<mathFunctions::FieldFunction>(
                 "temperature", ablate::mathFunctions::Create(testingParam.TExact, &testingParam.parameters), ablate::mathFunctions::Create(testingParam.T_tExact, &testingParam.parameters));
 
+
+            // TODO merge back together
+            auto velocityExact1 = std::make_shared<domain::ExactFunction>(
+                "velocity", ablate::mathFunctions::Create(testingParam.uExact, &testingParam.parameters), ablate::mathFunctions::Create(testingParam.u_tExact, &testingParam.parameters));
+            auto pressureExact1 = std::make_shared<domain::ExactFunction>("pressure", ablate::mathFunctions::Create(testingParam.pExact, &testingParam.parameters));
+            auto temperatureExact1 = std::make_shared<domain::ExactFunction>(
+                "temperature", ablate::mathFunctions::Create(testingParam.TExact, &testingParam.parameters), ablate::mathFunctions::Create(testingParam.T_tExact, &testingParam.parameters));
+
+
             // create a time stepper
             auto timeStepper = ablate::solver::TimeStepper(mesh,
                                                            nullptr,
                                                            {},
                                                            std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{velocityExact, pressureExact, temperatureExact},
-                                                           std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{velocityExact, pressureExact, temperatureExact});
+                                                           std::vector<std::shared_ptr<domain::ExactFunction>>{velocityExact1, pressureExact1, temperatureExact1});
 
             timeStepper.Register(std::make_shared<ablate::finiteElement::IncompressibleFlowSolver>(
                 "testFlow",
@@ -231,8 +240,8 @@ TEST_P(InertialParticleExactTestFixture, ParticleShouldMoveAsExpected) {
                 nullptr,
                 parameters,
                 /* boundary conditions */
-                std::vector<std::shared_ptr<boundaryConditions::BoundaryCondition>>{std::make_shared<boundaryConditions::Essential>("wall velocity", std::vector<int>{3, 1, 2, 4}, velocityExact),
-                                                                                    std::make_shared<boundaryConditions::Essential>("wall temp", std::vector<int>{3, 1, 2, 4}, temperatureExact)},
+                std::vector<std::shared_ptr<boundaryConditions::BoundaryCondition>>{std::make_shared<boundaryConditions::Essential>("wall velocity", std::vector<int>{3, 1, 2, 4}, velocityExact1),
+                                                                                    std::make_shared<boundaryConditions::Essential>("wall temp", std::vector<int>{3, 1, 2, 4}, temperatureExact1)},
                 /* aux updates*/
                 std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{}));
 

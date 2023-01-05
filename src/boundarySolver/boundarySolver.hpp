@@ -224,7 +224,7 @@ class BoundarySolver : public solver::CellSolver, public solver::RHSFunction, pr
     /**
      * Helper function to project values to a cell boundary instead of the cell centroid
      */
-    void InsertFieldFunctions(const std::vector<std::shared_ptr<mathFunctions::FieldFunction>>& initialization, PetscReal time = 0.0);
+    void InsertFieldFunctions(const std::vector<std::shared_ptr<domain::FieldMathFunction>>& initialization, PetscReal time = 0.0);
 
     /**
      * Return a reference to the boundary geometry.  This is a slow call and should only be done for init/debugging/testing

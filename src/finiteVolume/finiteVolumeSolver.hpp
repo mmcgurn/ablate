@@ -7,7 +7,6 @@
 #include "cellInterpolant.hpp"
 #include "eos/eos.hpp"
 #include "faceInterpolant.hpp"
-#include "mathFunctions/fieldFunction.hpp"
 #include "solver/cellSolver.hpp"
 #include "solver/solver.hpp"
 #include "solver/timeStepper.hpp"
