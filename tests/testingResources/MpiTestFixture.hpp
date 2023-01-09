@@ -38,7 +38,7 @@ class MpiTestFixture : public ::testing::Test {
     static bool inMpiTestRun;
     static bool keepOutputFile;
     static std::string mpiCommand;
-    static std::string ParseCommandLineArgument(int* argc, char*** argv, const std::string flag);
+    static std::string ParseCommandLineArgument(int* argcIn, char*** argvIn, const std::string& flag);
     MpiTestParameter mpiTestParameter;
 
     // Support call for comparing two files
@@ -127,7 +127,7 @@ class MpiTestFixture : public ::testing::Test {
     }
 
    public:
-    static bool InitializeTestingEnvironment(int* argc, char*** argv);
+    static bool InitializeTestingEnvironment(int* argcIn, char*** argvIn);
 };
 
 // Define macros to simplify the setup and running of mpi based code

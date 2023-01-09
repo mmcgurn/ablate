@@ -1,5 +1,6 @@
 add_executable(integrationTests "")
-target_link_libraries(integrationTests PUBLIC GTest::gtest ablateLibrary testingResources)
+target_link_libraries(integrationTests PUBLIC GTest::gtest ablateLibrary testingResources PRIVATE chrestCompilerFlags)
+set_property(TARGET integrationTests PROPERTY CXX_VISIBILITY_PRESET default)
 
 target_sources(integrationTests
         PRIVATE
