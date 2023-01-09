@@ -1,6 +1,6 @@
 #include "formulaBase.hpp"
 
-#include <tgmath.h>
+#include <ctgmath>
 #include <utility>
 #include "utilities/stringUtilities.hpp"
 
