@@ -42,7 +42,10 @@ ablate::mathFunctions::FormulaBase::FormulaBase(std::string functionString, cons
 std::invalid_argument ablate::mathFunctions::FormulaBase::ConvertToException(mu::Parser::exception_type& exception) {
     return std::invalid_argument("Unable to parser (" + exception.GetExpr() + "). " + exception.GetMsg());
 }
-mu::value_type ablate::mathFunctions::FormulaBase::PowerFunction(mu::value_type a, mu::value_type b) { return std::pow(a, b); }
+
+mu::value_type ablate::mathFunctions::FormulaBase::PowerFunction(mu::value_type a, mu::value_type b) {
+    return std::pow(a, b);
+}
 
 mu::value_type ablate::mathFunctions::FormulaBase::RandomFunction(void* data, mu::value_type lowerBound, mu::value_type upperBound) {
     std::uniform_real_distribution<mu::value_type> uniformDist(lowerBound, upperBound);
