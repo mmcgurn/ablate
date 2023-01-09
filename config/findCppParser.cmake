@@ -4,8 +4,8 @@ IF(TARGET CHREST::cppParserLibrary)
 ELSE()
     FetchContent_Declare(
             cppParserLibrary
-            GIT_REPOSITORY https://github.com/mmcgurn/CppParser.git
-            GIT_TAG   mcgurn/cpp-update
+            GIT_REPOSITORY https://github.com/UBCHREST/CppParser.git
+            GIT_TAG  v0.2.7
     )
     FetchContent_MakeAvailable(cppParserLibrary)
     set_property(TARGET cppParserLibrary PROPERTY CXX_VISIBILITY_PRESET default)
