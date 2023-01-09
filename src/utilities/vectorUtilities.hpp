@@ -108,7 +108,7 @@ class VectorUtilities {
     template <class T>
     static inline std::string Concatenate(const std::vector<T>& vector, const std::string& delimiter = ", ") {
         using namespace std;
-        return std::accumulate(std::begin(vector), std::end(vector), std::string(), [&delimiter](std::string& ss, const T& s) { return ss.empty() ? toString(s) : ss + delimiter + toString(s); });
+        return std::accumulate(std::begin(vector), std::end(vector), std::string(), [&delimiter](std::string ss, T s) { return ss.empty() ? toString(s) : ss + delimiter + toString(s); });
     }
 
     /**
