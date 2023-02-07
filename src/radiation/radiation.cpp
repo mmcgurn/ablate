@@ -349,18 +349,23 @@ void ablate::radiation::Radiation::Initialize(const solver::Range& cellRange, ab
     int rank;
     MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
 
-    for (PetscInt c = 0; c < numberOriginCells; ++c) {
-        for (PetscInt r = 0; r < raysPerCell; ++r) {
-            for (unsigned short int s = 0; s < raySegmentsPerOriginRay[rayIndexOffset]; ++s) {
-                if(remoteRayInformation[segmentOffset].index < 0 || remoteRayInformation[segmentOffset].rank < 0){
-                    std::cout << "Invalid Index (" << rank << " : " << c << ", " << r << ", s" << std::endl;
-                }
-
-                ++segmentOffset;
-            }
-            ++rayIndexOffset;
-        }
+    for(PetscInt i =0; i < uniqueRaySegments; ++i){
+        if(remoteRayInformation[i].index < 0 || remoteRayInformation[i].rank < 0){
+                                std::cout << "Invalid Index (" << rank << ") : " <<i << std::endl;
+                            }
     }
+//    for (PetscInt c = 0; c < numberOriginCells; ++c) {
+//        for (PetscInt r = 0; r < raysPerCell; ++r) {
+//            for (unsigned short int s = 0; s < raySegmentsPerOriginRay[rayIndexOffset]; ++s) {
+//                if(remoteRayInformation[segmentOffset].index < 0 || remoteRayInformation[segmentOffset].rank < 0){
+//                    std::cout << "Invalid Index (" << rank << " : " << c << ", " << r << ", s" << std::endl;
+//                }
+//
+//                ++segmentOffset;
+//            }
+//            ++rayIndexOffset;
+//        }
+//    }
 
     MPI_Barrier(PETSC_COMM_WORLD);
     std::cout << "No invalid arguments found: " << std::endl;
