@@ -344,8 +344,6 @@ void ablate::radiation::Radiation::Initialize(const solver::Range& cellRange, ab
     }
 
     // check for missing data
-    PetscInt segmentOffset = 0;
-    PetscInt rayIndexOffset = 0;
     int rank;
     MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
 
