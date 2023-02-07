@@ -362,6 +362,8 @@ void ablate::radiation::Radiation::Initialize(const solver::Range& cellRange, ab
         }
     }
 
+    MPI_Barrier(PETSC_COMM_WORLD);
+    std::cout << "No invalid arguments found: " << std::endl;
 
     // remove the radReturn, the information has now been moved to the remoteRayInformation
     DMSwarmRestoreField(radReturn, IdentifierField, nullptr, nullptr, (void**)&returnIdentifiers) >>
