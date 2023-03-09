@@ -6,6 +6,10 @@ if (NOT DEFINED CMAKE_C_COMPILER)
     # Set the compilers based upon the PETSc package
     pkg_get_variable(PETSC_C_COMPILER PETSc ccompiler)
     set(CMAKE_C_COMPILER ${PETSC_C_COMPILER})
+
+    pkg_get_variable(PETSC_C_FLAGS PETSc cflags_extra)
+    string(REPLACE ";" " " PETSC_C_FLAGS_STR "${PETSC_C_FLAGS}")
+    set(CMAKE_C_FLAGS_INIT ${PETSC_C_FLAGS_STR})
 endif ()
 
 # Check if a CXX compiler is explicitly stated
@@ -13,6 +17,10 @@ if (NOT DEFINED CMAKE_CXX_COMPILER)
     # Set the compilers based upon the PETSc package
     pkg_get_variable(PETSC_CXX_COMPILER PETSc cxxcompiler)
     set(CMAKE_CXX_COMPILER ${PETSC_CXX_COMPILER})
+
+    pkg_get_variable(PETSC_CXX_FLAGS PETSc cxxflags_extra)
+    string(REPLACE ";" " " PETSC_CXX_FLAGS_STR "${PETSC_CXX_FLAGS}")
+    set(CMAKE_CXX_FLAGS_INIT ${PETSC_CXX_FLAGS_STR})
 endif ()
 
 # Set the project details
@@ -77,6 +85,7 @@ target_link_libraries(ablateLibrary
 set_property(TARGET ablateLibrary PROPERTY CXX_EXTENSIONS ON)
 set_property(TARGET ablateLibrary PROPERTY CMAKE_CXX_STANDARD_REQUIRED ON)
 set_property(TARGET ablateLibrary PROPERTY CXX_STANDARD 17)
+set_property(TARGET ablateLibrary PROPERTY CXX_VISIBILITY_PRESET default)
 
 # Setup and configure testing
 if (BUILD_TESTING)
@@ -92,6 +101,13 @@ endif ()
 # keep a separate main statement
 add_executable(ablate main.cpp)
 target_link_libraries(ablate PUBLIC ablateLibrary PRIVATE chrestCompilerFlags)
+set_property(TARGET ablate PROPERTY CXX_VISIBILITY_PRESET default)
+#
+#target_compile_options(ablateLibrary PRIVATE -fsanitize=address)
+#target_link_options(ablateLibrary PRIVATE -fsanitize=address)
+#target_compile_options(ablate PRIVATE -fsanitize=address)
+#target_link_options(ablate PRIVATE -fsanitize=address)
+#
 
 # include system specific hacks
 include(config/systemHacks.cmake)
