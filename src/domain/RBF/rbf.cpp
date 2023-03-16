@@ -245,9 +245,9 @@ void RBF::Matrix(const PetscInt c) {
 // numDer - Number of derivatives to set
 // dx, dy, dz - Lists of length numDer indicating the derivatives
 // useVertices - Use common vertices when determining neighbors. If false then use common edges.
-void RBF::SetDerivatives(PetscInt numDer, PetscInt dx[], PetscInt dy[], PetscInt dz[], PetscBool useVertices) {
+void RBF::SetDerivatives(PetscInt numDer, PetscInt dx[], PetscInt dy[], PetscInt dz[], PetscBool useVerticesIn) {
     if (numDer > 0) {
-        RBF::useVertices = useVertices;
+        RBF::useVertices = useVerticesIn;
         RBF::nDer = numDer;
 
         PetscMalloc1(3 * numDer, &(RBF::dxyz)) >> utilities::PetscUtilities::checkError;
@@ -375,9 +375,9 @@ void RBF::SetupDerivativeStencils(PetscInt c) {
 
 // Setup all derivative stencils for the entire subDomain
 void RBF::SetupDerivativeStencils() {
-    const PetscInt cStart = RBF::cStart, cEnd = RBF::cEnd;
+    const PetscInt cStartLocal = RBF::cStart, cEndLocal = RBF::cEnd;
 
-    for (PetscInt c = cStart; c < cEnd; ++c) {
+    for (PetscInt c = cStartLocal; c < cEndLocal; ++c) {
         RBF::SetupDerivativeStencils(RBF::cellList[c]);
     }
 }
@@ -460,7 +460,8 @@ PetscReal RBF::Interpolate(const ablate::domain::Field *field, PetscReal xEval[3
     DMPlexGetContainingCell(dm, xEval, &c) >> utilities::PetscUtilities::checkError;
 
     if (c < 0) {
-        throw std::runtime_error("ablate::domain::RBF::Interpolate could not determine the location of (" + std::to_string(xEval[0]) + ", " + std::to_string(xEval[1]) + ", " + std::to_string(xEval[2]) + ").");
+        throw std::runtime_error("ablate::domain::RBF::Interpolate could not determine the location of (" + std::to_string(xEval[0]) + ", " + std::to_string(xEval[1]) + ", " +
+                                 std::to_string(xEval[2]) + ").");
     }
 
     if (RBF::RBFMatrix[c] == nullptr) {
