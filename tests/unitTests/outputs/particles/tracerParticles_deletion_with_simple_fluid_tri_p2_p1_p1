@@ -2,25 +2,25 @@ L_2 Error: \[(.*), (.*), (.*)\]<expects> <1E-13 <1E-13 <1E-13
 L_2 Residual: (.*)<expects> <1E-12
 Taylor approximation converging at order 2.00
 Timestep: 0000 time = 0        	 L_2 Error: \[(.*), (.*), (.*)\] ParticleCount: (.*)<expects> <1E-13 <1E-13 <1E-13 =25
-Avg Particle Location: \[(.*), (.*), (.*)\]<expects> =0.5 =0.5 =0
+Avg Particle Location: \[(.*), (.*), (.*)\]<expects> n0.5 n0.5 =0
 L_2 convergence rate: (.*)<expects> =1.0
 Timestep: 0001 time = 0.06     	 L_2 Error: \[(.*), (.*), (.*)\] ParticleCount: (.*)<expects> <1E-13 <1E-13 <1E-13 =25
-Avg Particle Location: \[(.*), (.*), (.*)\]<expects> =0.56 =0.531 =0
+Avg Particle Location: \[(.*), (.*), (.*)\]<expects> n0.56 n0.531 =0
 L_2 convergence rate: (.*)<expects> =1.0
 Timestep: 0002 time = 0.12     	 L_2 Error: \[(.*), (.*), (.*)\] ParticleCount: (.*)<expects> <1E-13 <1E-13 <1E-13 =25
-Avg Particle Location: \[(.*), (.*), (.*)\]<expects> =0.68 =0.604 =0
+Avg Particle Location: \[(.*), (.*), (.*)\]<expects> n0.68 n0.604 =0
 L_2 convergence rate: (.*)<expects> =1.0
 Timestep: 0003 time = 0.18     	 L_2 Error: \[(.*), (.*), (.*)\] ParticleCount: (.*)<expects> <1E-13 <1E-13 <1E-13 =20
-Avg Particle Location: \[(.*), (.*), (.*)\]<expects> =0.738 =0.674 =0
+Avg Particle Location: \[(.*), (.*), (.*)\]<expects> n0.737 n0.674 =0
 L_2 convergence rate: (.*)<expects> =1.0
 Timestep: 0004 time = 0.24     	 L_2 Error: \[(.*), (.*), (.*)\] ParticleCount: (.*)<expects> <1E-13 <1E-13 <1E-13 =14
-Avg Particle Location: \[(.*), (.*), (.*)\]<expects> =0.786 =0.72 =0
+Avg Particle Location: \[(.*), (.*), (.*)\]<expects> n0.786 n0.72 =0
 L_2 convergence rate: (.*)<expects> =1.0
 Timestep: 0005 time = 0.3      	 L_2 Error: \[(.*), (.*), (.*)\] ParticleCount: (.*)<expects> <1E-13 <1E-13 <1E-13 =8
-Avg Particle Location: \[(.*), (.*), (.*)\]<expects> =0.853 =0.748 =0
+Avg Particle Location: \[(.*), (.*), (.*)\]<expects> n0.853 n0.748 =0
 L_2 convergence rate: (.*)<expects> =1.0
 Timestep: 0006 time = 0.36     	 L_2 Error: \[(.*), (.*), (.*)\] ParticleCount: (.*)<expects> <1E-13 <1E-13 <1E-13 =3
-Avg Particle Location: \[(.*), (.*), (.*)\]<expects> =0.91 =0.752 =0
+Avg Particle Location: \[(.*), (.*), (.*)\]<expects> n0.91 n0.752 =0
 L_2 convergence rate: (.*)<expects> =nan
 Timestep: 0007 time = 0.42     	 L_2 Error: \[(.*), (.*), (.*)\] ParticleCount: (.*)<expects> <1E-13 <1E-13 <1E-13 =0
 Avg Particle Location: \[(.*), (.*), (.*)\]<expects> =0.0 =0.0 =0
