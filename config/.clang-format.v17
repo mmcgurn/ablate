@@ -22,7 +22,6 @@ AlwaysBreakBeforeMultilineStrings: true
 AlwaysBreakTemplateDeclarations: Yes
 BinPackArguments: false
 BinPackParameters: true
-BreakBeforeBraces: Custom
 BraceWrapping:
   AfterClass:      false
   AfterControlStatement: false
@@ -40,6 +39,7 @@ BraceWrapping:
   SplitEmptyRecord: true
   SplitEmptyNamespace: true
 BreakBeforeBinaryOperators: None
+BreakBeforeBraces: Attach
 BreakBeforeInheritanceComma: false
 BreakInheritanceList: BeforeColon
 BreakBeforeTernaryOperators: true
